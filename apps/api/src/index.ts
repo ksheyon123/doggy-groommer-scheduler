@@ -6,6 +6,7 @@ import shopRoutes from "./routes/shop.routes";
 import employeeRoutes from "./routes/employee.routes";
 import dogRoutes from "./routes/dog.routes";
 import groomingAppointmentRoutes from "./routes/groomingAppointment.routes";
+import authRoutes from "./routes/auth.routes";
 
 dotenv.config();
 
@@ -20,6 +21,7 @@ app.get("/", (req: Request, res: Response) => {
 });
 
 // API Routes
+app.use("/api/auth", authRoutes);
 app.use("/api/shops", shopRoutes);
 app.use("/api/employees", employeeRoutes);
 app.use("/api/dogs", dogRoutes);

@@ -7,26 +7,95 @@ interface LoginModalProps {
   onClose?: () => void;
 }
 
+// OAuth URL 생성 함수들
+const getGoogleOAuthUrl = (): string => {
+  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
+  const redirectUri = `${typeof window !== "undefined" ? window.location.origin : ""}/auth/callback/google`;
+  const scope = "email profile";
+  const responseType = "code";
+
+  const params = new URLSearchParams({
+    client_id: clientId,
+    redirect_uri: redirectUri,
+    response_type: responseType,
+    scope: scope,
+    access_type: "offline",
+    prompt: "consent",
+  });
+
+  return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+};
+
+const getKakaoOAuthUrl = (): string => {
+  const clientId = process.env.NEXT_PUBLIC_KAKAO_CLIENT_ID || "";
+  const redirectUri = `${typeof window !== "undefined" ? window.location.origin : ""}/auth/callback/kakao`;
+  const responseType = "code";
+
+  const params = new URLSearchParams({
+    client_id: clientId,
+    redirect_uri: redirectUri,
+    response_type: responseType,
+  });
+
+  return `https://kauth.kakao.com/oauth/authorize?${params.toString()}`;
+};
+
+const getNaverOAuthUrl = (): string => {
+  const clientId = process.env.NEXT_PUBLIC_NAVER_CLIENT_ID || "";
+  const redirectUri = `${typeof window !== "undefined" ? window.location.origin : ""}/auth/callback/naver`;
+  const responseType = "code";
+  const state = Math.random().toString(36).substring(7); // CSRF 방지용 state
+
+  // state를 sessionStorage에 저장 (콜백에서 검증용)
+  if (typeof window !== "undefined") {
+    sessionStorage.setItem("naver_oauth_state", state);
+  }
+
+  const params = new URLSearchParams({
+    client_id: clientId,
+    redirect_uri: redirectUri,
+    response_type: responseType,
+    state: state,
+  });
+
+  return `https://nid.naver.com/oauth2.0/authorize?${params.toString()}`;
+};
+
 export function LoginModal({ isOpen, onClose }: LoginModalProps) {
   if (!isOpen) return null;
 
   const handleGoogleLogin = () => {
-    console.log("Google 로그인 시도");
-    // TODO: Google OAuth 로직 구현
+    const url = getGoogleOAuthUrl();
+    if (url) {
+      window.location.href = url;
+    }
   };
 
   const handleNaverLogin = () => {
-    console.log("Naver 로그인 시도");
-    // TODO: Naver OAuth 로직 구현
+    const url = getNaverOAuthUrl();
+    if (url) {
+      window.location.href = url;
+    }
   };
 
   const handleKakaoLogin = () => {
-    console.log("Kakao 로그인 시도");
-    // TODO: Kakao OAuth 로직 구현
+    const url = getKakaoOAuthUrl();
+    if (url) {
+      window.location.href = url;
+    }
+  };
+
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget && onClose) {
+      onClose();
+    }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+      onClick={handleBackdropClick}
+    >
       <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
         <div className="px-6 py-6 text-center border-b border-zinc-200 dark:border-zinc-800">

@@ -7,6 +7,169 @@
 
 ---
 
+## 인증 (Authentication) API
+
+### 인증 흐름
+
+1. 프론트엔드에서 소셜 로그인 버튼 클릭
+2. 해당 소셜 Provider의 인증 페이지로 리다이렉트
+3. 사용자 인증 후 콜백 URL로 리다이렉트 (code 포함)
+4. 프론트엔드에서 code를 백엔드로 전송
+5. 백엔드에서 access token과 refresh token 발급
+6. 프론트엔드에서 토큰을 localStorage에 저장
+
+---
+
+### 1. Google OAuth 콜백
+
+Google OAuth 인증 후 콜백을 처리합니다.
+
+**Endpoint**: `POST /api/auth/google/callback`
+
+**Request Body**:
+
+```json
+{
+  "code": "Google에서 받은 authorization code",
+  "redirect_uri": "http://localhost:3000/auth/callback/google"
+}
+```
+
+**Response**:
+
+```json
+{
+  "user": {
+    "id": 1,
+    "email": "user@gmail.com",
+    "name": "홍길동",
+    "profileImage": "https://...",
+    "provider": "google"
+  },
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+---
+
+### 2. Kakao OAuth 콜백
+
+Kakao OAuth 인증 후 콜백을 처리합니다.
+
+**Endpoint**: `POST /api/auth/kakao/callback`
+
+**Request Body**:
+
+```json
+{
+  "code": "Kakao에서 받은 authorization code",
+  "redirect_uri": "http://localhost:3000/auth/callback/kakao"
+}
+```
+
+**Response**: Google과 동일
+
+---
+
+### 3. Naver OAuth 콜백
+
+Naver OAuth 인증 후 콜백을 처리합니다.
+
+**Endpoint**: `POST /api/auth/naver/callback`
+
+**Request Body**:
+
+```json
+{
+  "code": "Naver에서 받은 authorization code",
+  "state": "CSRF 방지를 위한 state 값",
+  "redirect_uri": "http://localhost:3000/auth/callback/naver"
+}
+```
+
+**Response**: Google과 동일
+
+---
+
+### 4. 토큰 갱신
+
+만료된 access token을 갱신합니다.
+
+**Endpoint**: `POST /api/auth/refresh`
+
+**Request Body**:
+
+```json
+{
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+**Response**:
+
+```json
+{
+  "accessToken": "새로운 access token",
+  "refreshToken": "새로운 refresh token"
+}
+```
+
+---
+
+### 5. 로그아웃
+
+사용자를 로그아웃합니다.
+
+**Endpoint**: `POST /api/auth/logout`
+
+**Request Body**:
+
+```json
+{
+  "userId": 1
+}
+```
+
+**Response**:
+
+```json
+{
+  "message": "Logged out successfully"
+}
+```
+
+---
+
+### 6. 현재 사용자 정보 조회
+
+현재 로그인한 사용자 정보를 조회합니다. (인증 필요)
+
+**Endpoint**: `GET /api/auth/me`
+
+**Headers**:
+
+```
+Authorization: Bearer <accessToken>
+```
+
+**Response**:
+
+```json
+{
+  "user": {
+    "id": 1,
+    "email": "user@gmail.com",
+    "name": "홍길동",
+    "profile_image": "https://...",
+    "provider": "google",
+    "shop_id": 1
+  }
+}
+```
+
+---
+
 ## ERD 구조
 
 ```
