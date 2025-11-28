@@ -4,66 +4,66 @@ import React, { useState } from "react";
 
 interface CalendarProps {
   onDateSelect?: (date: Date) => void;
+  onTimeSlotSelect?: (date: Date, hour: number) => void;
   selectedDate?: Date;
   className?: string;
 }
 
 export function Calendar({
   onDateSelect,
+  onTimeSlotSelect,
   selectedDate,
   className = "",
 }: CalendarProps) {
-  const [currentDate, setCurrentDate] = useState(selectedDate || new Date());
   const [viewDate, setViewDate] = useState(selectedDate || new Date());
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // 현재 달의 첫날과 마지막 날 구하기
-  const firstDayOfMonth = new Date(
-    viewDate.getFullYear(),
-    viewDate.getMonth(),
-    1
-  );
-  const lastDayOfMonth = new Date(
-    viewDate.getFullYear(),
-    viewDate.getMonth() + 1,
-    0
-  );
+  // 요일 배열 (일요일부터 시작)
+  const weekDays = ["일", "월", "화", "수", "목", "금", "토"];
 
-  // 달력 시작 요일 (일요일 = 0)
-  const startingDayOfWeek = firstDayOfMonth.getDay();
+  // 시간 배열 (00:00 ~ 24:00)
+  const hours = Array.from({ length: 25 }, (_, i) => i);
 
-  // 총 날짜 수
-  const daysInMonth = lastDayOfMonth.getDate();
-
-  // 이전 달로 이동
-  const goToPreviousMonth = () => {
-    setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1));
+  // 현재 주의 시작일(일요일) 구하기
+  const getWeekStart = (date: Date) => {
+    const d = new Date(date);
+    const day = d.getDay();
+    d.setDate(d.getDate() - day);
+    d.setHours(0, 0, 0, 0);
+    return d;
   };
 
-  // 다음 달로 이동
-  const goToNextMonth = () => {
-    setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1));
+  // 현재 주의 날짜들 구하기
+  const getWeekDates = (date: Date) => {
+    const weekStart = getWeekStart(date);
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(weekStart);
+      d.setDate(weekStart.getDate() + i);
+      return d;
+    });
+  };
+
+  const weekDates = getWeekDates(viewDate);
+
+  // 이전 주로 이동
+  const goToPreviousWeek = () => {
+    const newDate = new Date(viewDate);
+    newDate.setDate(viewDate.getDate() - 7);
+    setViewDate(newDate);
+  };
+
+  // 다음 주로 이동
+  const goToNextWeek = () => {
+    const newDate = new Date(viewDate);
+    newDate.setDate(viewDate.getDate() + 7);
+    setViewDate(newDate);
   };
 
   // 오늘로 이동
   const goToToday = () => {
-    const now = new Date();
-    setViewDate(now);
-    setCurrentDate(now);
-    if (onDateSelect) {
-      onDateSelect(now);
-    }
-  };
-
-  // 날짜 선택
-  const selectDate = (day: number) => {
-    const selected = new Date(viewDate.getFullYear(), viewDate.getMonth(), day);
-    setCurrentDate(selected);
-    if (onDateSelect) {
-      onDateSelect(selected);
-    }
+    setViewDate(new Date());
   };
 
   // 날짜가 같은지 확인
@@ -75,32 +75,43 @@ export function Calendar({
     );
   };
 
-  // 요일 배열
-  const weekDays = ["일", "월", "화", "수", "목", "금", "토"];
+  // 시간 슬롯 클릭 핸들러
+  const handleTimeSlotClick = (date: Date, hour: number) => {
+    if (onTimeSlotSelect) {
+      onTimeSlotSelect(date, hour);
+    }
+    if (onDateSelect) {
+      const selectedDateTime = new Date(date);
+      selectedDateTime.setHours(hour, 0, 0, 0);
+      onDateSelect(selectedDateTime);
+    }
+  };
 
-  // 달력 날짜 배열 생성
-  const calendarDays = [];
+  // 시간 포맷팅
+  const formatHour = (hour: number) => {
+    return `${hour.toString().padStart(2, "0")}:00`;
+  };
 
-  // 빈 칸 추가 (이전 달의 마지막 날들)
-  for (let i = 0; i < startingDayOfWeek; i++) {
-    calendarDays.push(null);
-  }
+  // 날짜 포맷팅
+  const formatDate = (date: Date) => {
+    return `${date.getMonth() + 1}/${date.getDate()}`;
+  };
 
-  // 현재 달의 날짜들 추가
-  for (let day = 1; day <= daysInMonth; day++) {
-    calendarDays.push(day);
-  }
+  // 주 범위 표시
+  const weekStart = weekDates[0];
+  const weekEnd = weekDates[6];
+  const weekRangeText = `${weekStart.getFullYear()}년 ${weekStart.getMonth() + 1}월 ${weekStart.getDate()}일 - ${weekEnd.getMonth() + 1}월 ${weekEnd.getDate()}일`;
 
   return (
     <div
-      className={`w-full max-w-md mx-auto bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-6 ${className}`}
+      className={`w-full bg-white dark:bg-zinc-900 rounded-lg shadow-lg ${className}`}
     >
       {/* 헤더 */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-800">
         <button
-          onClick={goToPreviousMonth}
+          onClick={goToPreviousWeek}
           className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-          aria-label="이전 달"
+          aria-label="이전 주"
         >
           <svg
             className="w-5 h-5 text-zinc-600 dark:text-zinc-400"
@@ -118,8 +129,8 @@ export function Calendar({
         </button>
 
         <div className="flex items-center gap-4">
-          <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">
-            {viewDate.getFullYear()}년 {viewDate.getMonth() + 1}월
+          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+            {weekRangeText}
           </h2>
           <button
             onClick={goToToday}
@@ -130,9 +141,9 @@ export function Calendar({
         </div>
 
         <button
-          onClick={goToNextMonth}
+          onClick={goToNextWeek}
           className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-          aria-label="다음 달"
+          aria-label="다음 주"
         >
           <svg
             className="w-5 h-5 text-zinc-600 dark:text-zinc-400"
@@ -150,83 +161,91 @@ export function Calendar({
         </button>
       </div>
 
-      {/* 요일 헤더 */}
-      <div className="grid grid-cols-7 gap-2 mb-2">
-        {weekDays.map((day, index) => (
-          <div
-            key={day}
-            className={`text-center text-sm font-medium py-2 ${
-              index === 0
-                ? "text-red-500 dark:text-red-400"
-                : index === 6
-                  ? "text-blue-500 dark:text-blue-400"
-                  : "text-zinc-600 dark:text-zinc-400"
-            }`}
-          >
-            {day}
+      {/* 캘린더 그리드 */}
+      <div className="overflow-auto max-h-[600px]">
+        <div className="min-w-[800px]">
+          {/* 요일 헤더 */}
+          <div className="grid grid-cols-8 border-b border-zinc-200 dark:border-zinc-800 sticky top-0 bg-white dark:bg-zinc-900 z-10">
+            {/* 시간 열 헤더 (빈 셀) */}
+            <div className="p-3 border-r border-zinc-200 dark:border-zinc-800" />
+
+            {/* 요일 헤더 */}
+            {weekDates.map((date, index) => {
+              const isToday = isSameDay(date, today);
+              const dayOfWeek = index;
+
+              return (
+                <div
+                  key={index}
+                  className={`p-3 text-center border-r border-zinc-200 dark:border-zinc-800 last:border-r-0 ${
+                    isToday ? "bg-blue-50 dark:bg-blue-900/20" : ""
+                  }`}
+                >
+                  <div
+                    className={`text-sm font-medium ${
+                      dayOfWeek === 0
+                        ? "text-red-500 dark:text-red-400"
+                        : dayOfWeek === 6
+                          ? "text-blue-500 dark:text-blue-400"
+                          : "text-zinc-600 dark:text-zinc-400"
+                    }`}
+                  >
+                    {weekDays[dayOfWeek]}
+                  </div>
+                  <div
+                    className={`text-lg font-semibold mt-1 ${
+                      isToday
+                        ? "text-blue-600 dark:text-blue-400"
+                        : dayOfWeek === 0
+                          ? "text-red-500 dark:text-red-400"
+                          : dayOfWeek === 6
+                            ? "text-blue-500 dark:text-blue-400"
+                            : "text-zinc-900 dark:text-zinc-50"
+                    }`}
+                  >
+                    {formatDate(date)}
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        ))}
-      </div>
 
-      {/* 날짜 그리드 */}
-      <div className="grid grid-cols-7 gap-2">
-        {calendarDays.map((day, index) => {
-          if (day === null) {
-            return <div key={`empty-${index}`} className="aspect-square" />;
-          }
+          {/* 시간 그리드 */}
+          <div className="relative">
+            {hours.map((hour) => (
+              <div
+                key={hour}
+                className="grid grid-cols-8 border-b border-zinc-200 dark:border-zinc-800 last:border-b-0"
+              >
+                {/* 시간 열 */}
+                <div className="p-2 text-right pr-3 border-r border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50">
+                  <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                    {formatHour(hour)}
+                  </span>
+                </div>
 
-          const date = new Date(
-            viewDate.getFullYear(),
-            viewDate.getMonth(),
-            day
-          );
-          const isToday = isSameDay(date, today);
-          const isSelected = isSameDay(date, currentDate);
-          const dayOfWeek = index % 7;
+                {/* 각 요일의 시간 슬롯 */}
+                {weekDates.map((date, dayIndex) => {
+                  const isToday = isSameDay(date, today);
 
-          return (
-            <button
-              key={day}
-              onClick={() => selectDate(day)}
-              className={`
-                aspect-square rounded-lg text-sm font-medium transition-all
-                ${
-                  isSelected
-                    ? "bg-blue-500 text-white hover:bg-blue-600"
-                    : isToday
-                      ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50"
-                      : "text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                }
-                ${
-                  dayOfWeek === 0 && !isSelected && !isToday
-                    ? "text-red-500 dark:text-red-400"
-                    : ""
-                }
-                ${
-                  dayOfWeek === 6 && !isSelected && !isToday
-                    ? "text-blue-500 dark:text-blue-400"
-                    : ""
-                }
-              `}
-            >
-              {day}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* 선택된 날짜 표시 */}
-      {currentDate && (
-        <div className="mt-6 pt-6 border-t border-zinc-200 dark:border-zinc-800">
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            선택된 날짜
-          </p>
-          <p className="text-lg font-semibold text-zinc-900 dark:text-zinc-50 mt-1">
-            {currentDate.getFullYear()}년 {currentDate.getMonth() + 1}월{" "}
-            {currentDate.getDate()}일
-          </p>
+                  return (
+                    <button
+                      key={`${dayIndex}-${hour}`}
+                      onClick={() => handleTimeSlotClick(date, hour)}
+                      className={`
+                        h-12 border-r border-zinc-200 dark:border-zinc-800 last:border-r-0
+                        hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors
+                        ${isToday ? "bg-blue-50/50 dark:bg-blue-900/10" : ""}
+                      `}
+                      aria-label={`${formatDate(date)} ${formatHour(hour)}`}
+                    />
+                  );
+                })}
+              </div>
+            ))}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
