@@ -5,11 +5,13 @@
   "exports": {
     "./base.json": "./base.json",
     "./react.json": "./react.json",
-    "./node.json": "./node.json"
+    "./node.json": "./node.json",
+    "./next.json": "./next.json"
   },
   "files": [
     "base.json",
     "react.json",
-    "node.json"
+    "node.json",
+    "next.json"
   ]
 }
