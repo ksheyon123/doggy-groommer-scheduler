@@ -5,6 +5,7 @@ import {
   DailyView,
   WeeklyView,
   ViewModeDropdown,
+  LoginModal,
   useModal,
   type ViewMode,
 } from "@repo/ui";
@@ -13,6 +14,7 @@ import { useState } from "react";
 export default function Home() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>("monthly");
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
 
   const { showModal } = useModal();
 
@@ -69,6 +71,9 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-zinc-50 font-sans dark:bg-zinc-950">
+      {/* 로그인 모달 - 로그인 전에만 표시 */}
+      <LoginModal isOpen={!isLoggedIn} />
+
       {/* 헤더 */}
       <header className="bg-white dark:bg-zinc-900 shadow-sm border-b border-zinc-200 dark:border-zinc-800">
         <div className="max-w-4xl mx-auto px-8 py-4">

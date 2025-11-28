@@ -9,3 +9,4 @@ export * from "./components/dropdown";
 export * from "./components/daily-view";
 export * from "./components/weekly-view";
 export * from "./components/modal";
+export * from "./components/login-modal";
