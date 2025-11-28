@@ -2,14 +2,25 @@ import { Request, Response } from "express";
 import { GroomingAppointment } from "../models/GroomingAppointment";
 import { Dog } from "../models/Dog";
 import { User } from "../models/User";
+import { Shop } from "../models/Shop";
 
-// 모든 예약 조회
+// 샵별 모든 예약 조회
 export const getAllAppointments = async (req: Request, res: Response) => {
   try {
+    const { shopId } = req.query;
+
+    const whereClause = shopId ? { shop_id: shopId } : {};
+
     const appointments = await GroomingAppointment.findAll({
+      where: whereClause,
       include: [
         {
+          model: Shop,
+          attributes: ["id", "name"],
+        },
+        {
           model: User,
+          as: "createdByUser",
           attributes: ["id", "username", "email"],
         },
         {
@@ -41,7 +52,12 @@ export const getAppointmentById = async (req: Request, res: Response) => {
     const appointment = await GroomingAppointment.findByPk(id, {
       include: [
         {
+          model: Shop,
+          attributes: ["id", "name"],
+        },
+        {
           model: User,
+          as: "createdByUser",
           attributes: ["id", "username", "email"],
         },
         {
@@ -75,8 +91,9 @@ export const getAppointmentById = async (req: Request, res: Response) => {
 export const createAppointment = async (req: Request, res: Response) => {
   try {
     const {
-      user_id,
+      shop_id,
       dog_id,
+      created_by_user_id,
       grooming_type,
       memo,
       amount,
@@ -85,15 +102,24 @@ export const createAppointment = async (req: Request, res: Response) => {
     } = req.body;
 
     // 필수 필드 검증
-    if (!user_id || !dog_id) {
+    if (!shop_id || !dog_id || !created_by_user_id) {
       return res.status(400).json({
         success: false,
-        message: "user_id와 dog_id는 필수입니다.",
+        message: "shop_id, dog_id, created_by_user_id는 필수입니다.",
+      });
+    }
+
+    // 샵 존재 확인
+    const shop = await Shop.findByPk(shop_id);
+    if (!shop) {
+      return res.status(404).json({
+        success: false,
+        message: "샵을 찾을 수 없습니다.",
       });
     }
 
     // 사용자 존재 확인
-    const user = await User.findByPk(user_id);
+    const user = await User.findByPk(created_by_user_id);
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -110,17 +136,18 @@ export const createAppointment = async (req: Request, res: Response) => {
       });
     }
 
-    // 강아지가 해당 사용자의 것인지 확인
-    if (dog.user_id !== user_id) {
+    // 강아지가 해당 샵의 것인지 확인
+    if (dog.shop_id !== shop_id) {
       return res.status(403).json({
         success: false,
-        message: "해당 강아지에 대한 권한이 없습니다.",
+        message: "해당 강아지는 이 샵에 등록되어 있지 않습니다.",
       });
     }
 
     const newAppointment = await GroomingAppointment.create({
-      user_id,
+      shop_id,
       dog_id,
+      created_by_user_id,
       grooming_type,
       memo,
       amount,
@@ -133,7 +160,12 @@ export const createAppointment = async (req: Request, res: Response) => {
       {
         include: [
           {
+            model: Shop,
+            attributes: ["id", "name"],
+          },
+          {
             model: User,
+            as: "createdByUser",
             attributes: ["id", "username", "email"],
           },
           {
@@ -186,7 +218,12 @@ export const updateAppointment = async (req: Request, res: Response) => {
     const updatedAppointment = await GroomingAppointment.findByPk(id, {
       include: [
         {
+          model: Shop,
+          attributes: ["id", "name"],
+        },
+        {
           model: User,
+          as: "createdByUser",
           attributes: ["id", "username", "email"],
         },
         {
@@ -239,16 +276,21 @@ export const deleteAppointment = async (req: Request, res: Response) => {
   }
 };
 
-// 사용자별 예약 조회
-export const getAppointmentsByUserId = async (req: Request, res: Response) => {
+// 샵별 예약 조회
+export const getAppointmentsByShopId = async (req: Request, res: Response) => {
   try {
-    const { userId } = req.params;
+    const { shopId } = req.params;
 
     const appointments = await GroomingAppointment.findAll({
-      where: { user_id: userId },
+      where: { shop_id: shopId },
       include: [
         {
+          model: Shop,
+          attributes: ["id", "name"],
+        },
+        {
           model: User,
+          as: "createdByUser",
           attributes: ["id", "username", "email"],
         },
         {
@@ -281,7 +323,53 @@ export const getAppointmentsByDogId = async (req: Request, res: Response) => {
       where: { dog_id: dogId },
       include: [
         {
+          model: Shop,
+          attributes: ["id", "name"],
+        },
+        {
           model: User,
+          as: "createdByUser",
+          attributes: ["id", "username", "email"],
+        },
+        {
+          model: Dog,
+          attributes: ["id", "name", "breed"],
+        },
+      ],
+      order: [["appointment_at", "DESC"]],
+    });
+
+    res.status(200).json({
+      success: true,
+      data: appointments,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "예약 목록 조회 중 오류가 발생했습니다.",
+      error: error instanceof Error ? error.message : "알 수 없는 오류",
+    });
+  }
+};
+
+// 생성자별 예약 조회
+export const getAppointmentsByCreatedByUserId = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const { userId } = req.params;
+
+    const appointments = await GroomingAppointment.findAll({
+      where: { created_by_user_id: userId },
+      include: [
+        {
+          model: Shop,
+          attributes: ["id", "name"],
+        },
+        {
+          model: User,
+          as: "createdByUser",
           attributes: ["id", "username", "email"],
         },
         {

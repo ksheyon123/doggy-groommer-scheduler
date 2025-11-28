@@ -1,15 +1,26 @@
 import { Request, Response } from "express";
 import { Dog } from "../models/Dog";
 import { User } from "../models/User";
+import { Shop } from "../models/Shop";
 import { GroomingAppointment } from "../models/GroomingAppointment";
 
-// 모든 강아지 조회
+// 샵별 모든 강아지 조회
 export const getAllDogs = async (req: Request, res: Response) => {
   try {
+    const { shopId } = req.query;
+
+    const whereClause = shopId ? { shop_id: shopId } : {};
+
     const dogs = await Dog.findAll({
+      where: whereClause,
       include: [
         {
+          model: Shop,
+          attributes: ["id", "name"],
+        },
+        {
           model: User,
+          as: "assignedUser",
           attributes: ["id", "username", "email"],
         },
       ],
@@ -37,7 +48,12 @@ export const getDogById = async (req: Request, res: Response) => {
     const dog = await Dog.findByPk(id, {
       include: [
         {
+          model: Shop,
+          attributes: ["id", "name"],
+        },
+        {
           model: User,
+          as: "assignedUser",
           attributes: ["id", "username", "email"],
         },
       ],
@@ -71,7 +87,12 @@ export const getDogWithAppointments = async (req: Request, res: Response) => {
     const dog = await Dog.findByPk(id, {
       include: [
         {
+          model: Shop,
+          attributes: ["id", "name"],
+        },
+        {
           model: User,
+          as: "assignedUser",
           attributes: ["id", "username", "email"],
         },
       ],
@@ -106,16 +127,55 @@ export const getDogWithAppointments = async (req: Request, res: Response) => {
   }
 };
 
-// 사용자별 강아지 목록 조회
-export const getDogsByUserId = async (req: Request, res: Response) => {
+// 샵별 강아지 목록 조회
+export const getDogsByShopId = async (req: Request, res: Response) => {
+  try {
+    const { shopId } = req.params;
+
+    const dogs = await Dog.findAll({
+      where: { shop_id: shopId },
+      include: [
+        {
+          model: Shop,
+          attributes: ["id", "name"],
+        },
+        {
+          model: User,
+          as: "assignedUser",
+          attributes: ["id", "username", "email"],
+        },
+      ],
+      order: [["created_at", "DESC"]],
+    });
+
+    res.status(200).json({
+      success: true,
+      data: dogs,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "강아지 목록 조회 중 오류가 발생했습니다.",
+      error: error instanceof Error ? error.message : "알 수 없는 오류",
+    });
+  }
+};
+
+// 담당자별 강아지 목록 조회
+export const getDogsByAssignedUserId = async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
 
     const dogs = await Dog.findAll({
-      where: { user_id: userId },
+      where: { assigned_user_id: userId },
       include: [
         {
+          model: Shop,
+          attributes: ["id", "name"],
+        },
+        {
           model: User,
+          as: "assignedUser",
           attributes: ["id", "username", "email"],
         },
       ],
@@ -138,36 +198,53 @@ export const getDogsByUserId = async (req: Request, res: Response) => {
 // 새 강아지 등록
 export const createDog = async (req: Request, res: Response) => {
   try {
-    const { user_id, name, breed, note } = req.body;
+    const { shop_id, assigned_user_id, name, breed, note } = req.body;
 
     // 필수 필드 검증
-    if (!user_id || !name) {
+    if (!shop_id || !name) {
       return res.status(400).json({
         success: false,
-        message: "user_id와 name은 필수입니다.",
+        message: "shop_id와 name은 필수입니다.",
       });
     }
 
-    // 사용자 존재 확인
-    const user = await User.findByPk(user_id);
-    if (!user) {
+    // 샵 존재 확인
+    const shop = await Shop.findByPk(shop_id);
+    if (!shop) {
       return res.status(404).json({
         success: false,
-        message: "사용자를 찾을 수 없습니다.",
+        message: "샵을 찾을 수 없습니다.",
       });
+    }
+
+    // 담당자 존재 확인 (선택적)
+    if (assigned_user_id) {
+      const user = await User.findByPk(assigned_user_id);
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "담당자를 찾을 수 없습니다.",
+        });
+      }
     }
 
     const newDog = await Dog.create({
-      user_id,
+      shop_id,
+      assigned_user_id,
       name,
       breed,
       note,
     });
 
-    const dogWithUser = await Dog.findByPk(newDog.id, {
+    const dogWithDetails = await Dog.findByPk(newDog.id, {
       include: [
         {
+          model: Shop,
+          attributes: ["id", "name"],
+        },
+        {
           model: User,
+          as: "assignedUser",
           attributes: ["id", "username", "email"],
         },
       ],
@@ -176,7 +253,7 @@ export const createDog = async (req: Request, res: Response) => {
     res.status(201).json({
       success: true,
       message: "강아지가 성공적으로 등록되었습니다.",
-      data: dogWithUser,
+      data: dogWithDetails,
     });
   } catch (error) {
     res.status(500).json({
@@ -191,7 +268,7 @@ export const createDog = async (req: Request, res: Response) => {
 export const updateDog = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, breed, note } = req.body;
+    const { assigned_user_id, name, breed, note } = req.body;
 
     const dog = await Dog.findByPk(id);
 
@@ -202,7 +279,19 @@ export const updateDog = async (req: Request, res: Response) => {
       });
     }
 
+    // 담당자 존재 확인 (변경 시)
+    if (assigned_user_id !== undefined && assigned_user_id !== null) {
+      const user = await User.findByPk(assigned_user_id);
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "담당자를 찾을 수 없습니다.",
+        });
+      }
+    }
+
     // 업데이트할 필드만 설정
+    if (assigned_user_id !== undefined) dog.assigned_user_id = assigned_user_id;
     if (name !== undefined) dog.name = name;
     if (breed !== undefined) dog.breed = breed;
     if (note !== undefined) dog.note = note;
@@ -212,7 +301,12 @@ export const updateDog = async (req: Request, res: Response) => {
     const updatedDog = await Dog.findByPk(id, {
       include: [
         {
+          model: Shop,
+          attributes: ["id", "name"],
+        },
+        {
           model: User,
+          as: "assignedUser",
           attributes: ["id", "username", "email"],
         },
       ],

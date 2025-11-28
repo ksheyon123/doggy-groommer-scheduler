@@ -5,19 +5,17 @@ import {
   DataType,
   ForeignKey,
   BelongsTo,
-  HasMany,
 } from "sequelize-typescript";
 import { User } from "./User";
 import { Shop } from "./Shop";
-import { GroomingAppointment } from "./GroomingAppointment";
 
 @Table({
-  tableName: "dogs",
+  tableName: "employees",
   timestamps: true,
   createdAt: "created_at",
   updatedAt: "updated_at",
 })
-export class Dog extends Model {
+export class Employee extends Model {
   @ForeignKey(() => Shop)
   @Column({
     type: DataType.INTEGER,
@@ -31,31 +29,17 @@ export class Dog extends Model {
   @ForeignKey(() => User)
   @Column({
     type: DataType.INTEGER,
-    allowNull: true,
+    allowNull: false,
   })
-  assigned_user_id!: number;
+  user_id!: number;
 
   @BelongsTo(() => User)
-  assignedUser!: User;
+  user!: User;
 
   @Column({
     type: DataType.STRING,
     allowNull: false,
+    defaultValue: "staff",
   })
-  name!: string;
-
-  @Column({
-    type: DataType.STRING,
-    allowNull: true,
-  })
-  breed!: string;
-
-  @Column({
-    type: DataType.TEXT,
-    allowNull: true,
-  })
-  note!: string;
-
-  @HasMany(() => GroomingAppointment)
-  groomingAppointments!: GroomingAppointment[];
+  role!: string;
 }

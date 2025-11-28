@@ -3,7 +3,8 @@ import {
   getAllDogs,
   getDogById,
   getDogWithAppointments,
-  getDogsByUserId,
+  getDogsByShopId,
+  getDogsByAssignedUserId,
   createDog,
   updateDog,
   deleteDog,
@@ -11,7 +12,7 @@ import {
 
 const router = Router();
 
-// 모든 강아지 조회
+// 모든 강아지 조회 (쿼리로 shopId 필터 가능)
 router.get("/", getAllDogs);
 
 // 특정 강아지 조회
@@ -20,8 +21,11 @@ router.get("/:id", getDogById);
 // 강아지 상세 정보 조회 (예약 기록 포함)
 router.get("/:id/appointments", getDogWithAppointments);
 
-// 사용자별 강아지 목록 조회
-router.get("/user/:userId", getDogsByUserId);
+// 샵별 강아지 목록 조회
+router.get("/shop/:shopId", getDogsByShopId);
+
+// 담당자별 강아지 목록 조회
+router.get("/assigned-user/:userId", getDogsByAssignedUserId);
 
 // 새 강아지 등록
 router.post("/", createDog);

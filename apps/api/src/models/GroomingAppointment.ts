@@ -1,23 +1,31 @@
-import { Table, Column, Model, DataType, ForeignKey, BelongsTo } from 'sequelize-typescript';
-import { User } from './User';
-import { Dog } from './Dog';
+import {
+  Table,
+  Column,
+  Model,
+  DataType,
+  ForeignKey,
+  BelongsTo,
+} from "sequelize-typescript";
+import { User } from "./User";
+import { Dog } from "./Dog";
+import { Shop } from "./Shop";
 
 @Table({
-  tableName: 'grooming_appointments',
+  tableName: "grooming_appointments",
   timestamps: true,
-  createdAt: 'created_at',
-  updatedAt: 'updated_at',
+  createdAt: "created_at",
+  updatedAt: "updated_at",
 })
 export class GroomingAppointment extends Model {
-  @ForeignKey(() => User)
+  @ForeignKey(() => Shop)
   @Column({
     type: DataType.INTEGER,
     allowNull: false,
   })
-  user_id!: number;
+  shop_id!: number;
 
-  @BelongsTo(() => User)
-  user!: User;
+  @BelongsTo(() => Shop)
+  shop!: Shop;
 
   @ForeignKey(() => Dog)
   @Column({
@@ -28,6 +36,16 @@ export class GroomingAppointment extends Model {
 
   @BelongsTo(() => Dog)
   dog!: Dog;
+
+  @ForeignKey(() => User)
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: false,
+  })
+  created_by_user_id!: number;
+
+  @BelongsTo(() => User)
+  createdByUser!: User;
 
   @Column({
     type: DataType.STRING,
@@ -56,7 +74,7 @@ export class GroomingAppointment extends Model {
   @Column({
     type: DataType.STRING,
     allowNull: true,
-    defaultValue: 'scheduled',
+    defaultValue: "scheduled",
   })
   status!: string;
 }

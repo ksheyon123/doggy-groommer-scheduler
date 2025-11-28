@@ -2,8 +2,10 @@ import express, { Express, Request, Response } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { initDB } from "./models";
-import groomingAppointmentRoutes from "./routes/groomingAppointment.routes";
+import shopRoutes from "./routes/shop.routes";
+import employeeRoutes from "./routes/employee.routes";
 import dogRoutes from "./routes/dog.routes";
+import groomingAppointmentRoutes from "./routes/groomingAppointment.routes";
 
 dotenv.config();
 
@@ -18,8 +20,10 @@ app.get("/", (req: Request, res: Response) => {
 });
 
 // API Routes
-app.use("/api/appointments", groomingAppointmentRoutes);
+app.use("/api/shops", shopRoutes);
+app.use("/api/employees", employeeRoutes);
 app.use("/api/dogs", dogRoutes);
+app.use("/api/appointments", groomingAppointmentRoutes);
 
 initDB().then(() => {
   app.listen(port, () => {
