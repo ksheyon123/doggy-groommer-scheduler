@@ -267,7 +267,15 @@ export function WeeklyView({
 
   const weekStart = weekDates[0];
   const weekEnd = weekDates[6];
-  const weekRangeText = `${weekStart.getFullYear()}년 ${weekStart.getMonth() + 1}월 ${weekStart.getDate()}일 - ${weekEnd.getMonth() + 1}월 ${weekEnd.getDate()}일`;
+
+  const formatDateWithYear = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}/${month}/${day}`;
+  };
+
+  const weekRangeText = `${formatDateWithYear(weekStart)} - ${formatDateWithYear(weekEnd)}`;
 
   return (
     <div

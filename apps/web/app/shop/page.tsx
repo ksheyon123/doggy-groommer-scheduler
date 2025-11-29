@@ -1,8 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
+
+// 매장 타입
+interface Shop {
+  id: number;
+  name: string;
+  address?: string;
+  phone?: string;
+}
 
 // 임시 데이터 타입
 interface GroomingRecord {
@@ -61,11 +69,31 @@ const sampleData: GroomingRecord[] = [
 // API 기본 URL
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
+// 날짜를 YYYY-MM-DD 형식으로 포맷
+const formatDate = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+// 주간 기본 날짜 계산 (오늘 기준 7일 전 ~ 오늘)
+const getWeeklyDateRange = () => {
+  const today = new Date();
+  const weekAgo = new Date();
+  weekAgo.setDate(today.getDate() - 6); // 오늘 포함 7일
+  return {
+    start: formatDate(weekAgo),
+    end: formatDate(today),
+  };
+};
+
 export default function ShopManagementPage() {
   const router = useRouter();
   const { user, isAuthenticated, isLoading } = useAuth();
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const weeklyRange = getWeeklyDateRange();
+  const [startDate, setStartDate] = useState(weeklyRange.start);
+  const [endDate, setEndDate] = useState(weeklyRange.end);
   const [records, setRecords] = useState<GroomingRecord[]>(sampleData);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [shopName, setShopName] = useState("");
@@ -75,6 +103,39 @@ export default function ShopManagementPage() {
     title: string;
     message: string;
   }>({ isOpen: false, title: "", message: "" });
+
+  // 매장 관련 상태
+  const [shops, setShops] = useState<Shop[]>([]);
+  const [selectedShopId, setSelectedShopId] = useState<number | null>(null);
+  const [isLoadingShops, setIsLoadingShops] = useState(false);
+
+  // 선택된 매장 정보
+  const selectedShop = shops.find((shop) => shop.id === selectedShopId);
+
+  // 매장 목록 조회
+  const fetchShops = async () => {
+    setIsLoadingShops(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/shops`);
+      const data = await response.json();
+      if (response.ok && data.success) {
+        setShops(data.data);
+        // 첫 번째 매장을 기본 선택
+        if (data.data.length > 0 && !selectedShopId) {
+          setSelectedShopId(data.data[0].id);
+        }
+      }
+    } catch (error) {
+      console.error("매장 목록 조회 실패:", error);
+    } finally {
+      setIsLoadingShops(false);
+    }
+  };
+
+  // 컴포넌트 마운트 시 매장 목록 조회
+  useEffect(() => {
+    fetchShops();
+  }, []);
 
   // 알림 모달 표시
   const showAlert = (title: string, message: string) => {
@@ -109,6 +170,8 @@ export default function ShopManagementPage() {
         setShopName("");
         setIsRegisterModalOpen(false);
         showAlert("알림", "등록되었습니다.");
+        // 매장 목록 새로고침
+        fetchShops();
       } else {
         showAlert("알림", data.message || "매장 등록에 실패했습니다.");
       }
@@ -294,7 +357,7 @@ export default function ShopManagementPage() {
       <header className="bg-white dark:bg-zinc-900 shadow-sm border-b border-zinc-200 dark:border-zinc-800">
         <div className="max-w-6xl mx-auto px-8 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               <button
                 onClick={() => router.push("/")}
                 className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
@@ -347,40 +410,110 @@ export default function ShopManagementPage() {
 
       {/* 메인 콘텐츠 */}
       <main className="max-w-6xl mx-auto p-8">
+        {/* 매장 선택 섹션 */}
+        <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-800 p-6 mb-6">
+          <div className="flex flex-col gap-4">
+            <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+              매장 선택
+            </h2>
+            <div className="relative w-full max-w-md">
+              {isLoadingShops ? (
+                <div className="flex items-center gap-2 px-4 py-3 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                  <span className="text-zinc-500 dark:text-zinc-400">
+                    로딩 중...
+                  </span>
+                </div>
+              ) : (
+                <select
+                  value={selectedShopId || ""}
+                  onChange={(e) =>
+                    setSelectedShopId(
+                      e.target.value ? Number(e.target.value) : null
+                    )
+                  }
+                  className="w-full px-4 py-3 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none cursor-pointer"
+                >
+                  {shops.length > 0 ? (
+                    <>
+                      <option value="" disabled>
+                        매장을 선택하세요
+                      </option>
+                      {shops.map((shop) => (
+                        <option key={shop.id} value={shop.id}>
+                          {shop.name}
+                        </option>
+                      ))}
+                    </>
+                  ) : (
+                    <option value="" disabled>
+                      등록된 매장이 없습니다
+                    </option>
+                  )}
+                </select>
+              )}
+              {!isLoadingShops && (
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  <svg
+                    className="w-5 h-5 text-zinc-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
+              )}
+            </div>
+            {selectedShop && (
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                선택된 매장의 정산 내역을 조회합니다
+              </p>
+            )}
+          </div>
+        </div>
+
         {/* 기간 조회 섹션 */}
         <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-800 p-6 mb-6">
-          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">
-            기간 조회
-          </h2>
-          <div className="flex flex-wrap items-end gap-4">
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                시작일
-              </label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="px-3 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
+          <div className="flex flex-col gap-4">
+            <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+              기간 조회
+            </h2>
+            <div className="flex flex-wrap items-end gap-4">
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                  시작일
+                </label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="px-3 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                  종료일
+                </label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="px-3 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <button
+                onClick={handleSearch}
+                className="px-4 py-2 text-sm font-medium text-white bg-zinc-800 dark:bg-zinc-700 rounded-lg hover:bg-zinc-700 dark:hover:bg-zinc-600 transition-colors"
+              >
+                조회
+              </button>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                종료일
-              </label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="px-3 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            <button
-              onClick={handleSearch}
-              className="px-4 py-2 text-sm font-medium text-white bg-zinc-800 dark:bg-zinc-700 rounded-lg hover:bg-zinc-700 dark:hover:bg-zinc-600 transition-colors"
-            >
-              조회
-            </button>
           </div>
         </div>
 

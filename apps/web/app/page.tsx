@@ -26,7 +26,7 @@ interface Shop {
 
 export default function Home() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [viewMode, setViewMode] = useState<ViewMode>("monthly");
+  const [viewMode, setViewMode] = useState<ViewMode>("weekly");
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [shops, setShops] = useState<Shop[]>([]);
@@ -92,6 +92,14 @@ export default function Home() {
 
   const { showModal } = useModal();
 
+  // 날짜를 YYYY/MM/DD 형식으로 포맷
+  const formatDate = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}/${month}/${day}`;
+  };
+
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
 
@@ -102,8 +110,7 @@ export default function Home() {
         body: (onConfirm, onReject, onClose) => (
           <div className="space-y-3">
             <p>
-              <strong>{date.toLocaleDateString("ko-KR")}</strong>에 예약을
-              추가하시겠습니까?
+              <strong>{formatDate(date)}</strong>에 예약을 추가하시겠습니까?
             </p>
             <p className="text-sm text-zinc-500">
               예약을 추가하면 해당 날짜에 미용 일정이 등록됩니다.
