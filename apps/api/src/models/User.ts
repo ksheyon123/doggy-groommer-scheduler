@@ -19,13 +19,6 @@ export type AuthProvider = "google" | "kakao" | "naver" | "local";
 export class User extends Model {
   @Column({
     type: DataType.STRING,
-    allowNull: true,
-    unique: true,
-  })
-  username?: string;
-
-  @Column({
-    type: DataType.STRING,
     allowNull: false,
   })
   email!: string;

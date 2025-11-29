@@ -6,6 +6,7 @@ import {
   updateShop,
   deleteShop,
 } from "../controllers/shop.controller";
+import { authMiddleware } from "../middlewares/auth.middleware";
 
 const router = Router();
 
@@ -15,8 +16,8 @@ router.get("/", getAllShops);
 // 특정 샵 조회
 router.get("/:id", getShopById);
 
-// 새 샵 등록
-router.post("/", createShop);
+// 새 샵 등록 (인증 필요)
+router.post("/", authMiddleware, createShop);
 
 // 샵 정보 수정
 router.put("/:id", updateShop);

@@ -35,7 +35,7 @@ export const getShopById = async (req: Request, res: Response) => {
           include: [
             {
               model: User,
-              attributes: ["id", "username", "email"],
+              attributes: ["id", "name", "email"],
             },
           ],
         },
@@ -66,6 +66,14 @@ export const getShopById = async (req: Request, res: Response) => {
 export const createShop = async (req: Request, res: Response) => {
   try {
     const { name, address, phone } = req.body;
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "인증이 필요합니다.",
+      });
+    }
 
     if (!name) {
       return res.status(400).json({
@@ -78,6 +86,13 @@ export const createShop = async (req: Request, res: Response) => {
       name,
       address,
       phone,
+    });
+
+    // 매장 생성자를 Owner로 Employee 테이블에 등록
+    await Employee.create({
+      shop_id: newShop.id,
+      user_id: userId,
+      role: "owner",
     });
 
     res.status(201).json({

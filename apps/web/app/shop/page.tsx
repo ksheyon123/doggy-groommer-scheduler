@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAuth } from "@/lib/auth";
+import { useAuth, getAccessToken } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 
 // 매장 타입
@@ -154,12 +154,19 @@ export default function ShopManagementPage() {
       return;
     }
 
+    const accessToken = getAccessToken();
+    if (!accessToken) {
+      showAlert("알림", "로그인이 필요합니다.");
+      return;
+    }
+
     setIsRegistering(true);
     try {
       const response = await fetch(`${API_BASE_URL}/api/shops`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({ name: shopName.trim() }),
       });

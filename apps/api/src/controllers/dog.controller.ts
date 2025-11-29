@@ -21,7 +21,7 @@ export const getAllDogs = async (req: Request, res: Response) => {
         {
           model: User,
           as: "assignedUser",
-          attributes: ["id", "username", "email"],
+          attributes: ["id", "name", "email"],
         },
       ],
       order: [["created_at", "DESC"]],
@@ -54,7 +54,7 @@ export const getDogById = async (req: Request, res: Response) => {
         {
           model: User,
           as: "assignedUser",
-          attributes: ["id", "username", "email"],
+          attributes: ["id", "name", "email"],
         },
       ],
     });
@@ -93,7 +93,7 @@ export const getDogWithAppointments = async (req: Request, res: Response) => {
         {
           model: User,
           as: "assignedUser",
-          attributes: ["id", "username", "email"],
+          attributes: ["id", "name", "email"],
         },
       ],
     });
@@ -142,7 +142,7 @@ export const getDogsByShopId = async (req: Request, res: Response) => {
         {
           model: User,
           as: "assignedUser",
-          attributes: ["id", "username", "email"],
+          attributes: ["id", "name", "email"],
         },
       ],
       order: [["created_at", "DESC"]],
@@ -176,7 +176,7 @@ export const getDogsByAssignedUserId = async (req: Request, res: Response) => {
         {
           model: User,
           as: "assignedUser",
-          attributes: ["id", "username", "email"],
+          attributes: ["id", "name", "email"],
         },
       ],
       order: [["created_at", "DESC"]],
@@ -245,7 +245,7 @@ export const createDog = async (req: Request, res: Response) => {
         {
           model: User,
           as: "assignedUser",
-          attributes: ["id", "username", "email"],
+          attributes: ["id", "name", "email"],
         },
       ],
     });
@@ -307,7 +307,7 @@ export const updateDog = async (req: Request, res: Response) => {
         {
           model: User,
           as: "assignedUser",
-          attributes: ["id", "username", "email"],
+          attributes: ["id", "name", "email"],
         },
       ],
     });

@@ -13,7 +13,7 @@ export const getEmployeesByShopId = async (req: Request, res: Response) => {
       include: [
         {
           model: User,
-          attributes: ["id", "username", "email"],
+          attributes: ["id", "name", "email"],
         },
         {
           model: Shop,
@@ -45,7 +45,7 @@ export const getEmployeeById = async (req: Request, res: Response) => {
       include: [
         {
           model: User,
-          attributes: ["id", "username", "email"],
+          attributes: ["id", "name", "email"],
         },
         {
           model: Shop,
@@ -160,7 +160,7 @@ export const createEmployee = async (req: Request, res: Response) => {
       include: [
         {
           model: User,
-          attributes: ["id", "username", "email"],
+          attributes: ["id", "name", "email"],
         },
         {
           model: Shop,
@@ -206,7 +206,7 @@ export const updateEmployee = async (req: Request, res: Response) => {
       include: [
         {
           model: User,
-          attributes: ["id", "username", "email"],
+          attributes: ["id", "name", "email"],
         },
         {
           model: Shop,

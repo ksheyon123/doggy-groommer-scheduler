@@ -21,7 +21,7 @@ export const getAllAppointments = async (req: Request, res: Response) => {
         {
           model: User,
           as: "createdByUser",
-          attributes: ["id", "username", "email"],
+          attributes: ["id", "name", "email"],
         },
         {
           model: Dog,
@@ -58,7 +58,7 @@ export const getAppointmentById = async (req: Request, res: Response) => {
         {
           model: User,
           as: "createdByUser",
-          attributes: ["id", "username", "email"],
+          attributes: ["id", "name", "email"],
         },
         {
           model: Dog,
@@ -166,7 +166,7 @@ export const createAppointment = async (req: Request, res: Response) => {
           {
             model: User,
             as: "createdByUser",
-            attributes: ["id", "username", "email"],
+            attributes: ["id", "name", "email"],
           },
           {
             model: Dog,
@@ -224,7 +224,7 @@ export const updateAppointment = async (req: Request, res: Response) => {
         {
           model: User,
           as: "createdByUser",
-          attributes: ["id", "username", "email"],
+          attributes: ["id", "name", "email"],
         },
         {
           model: Dog,
@@ -291,7 +291,7 @@ export const getAppointmentsByShopId = async (req: Request, res: Response) => {
         {
           model: User,
           as: "createdByUser",
-          attributes: ["id", "username", "email"],
+          attributes: ["id", "name", "email"],
         },
         {
           model: Dog,
@@ -329,7 +329,7 @@ export const getAppointmentsByDogId = async (req: Request, res: Response) => {
         {
           model: User,
           as: "createdByUser",
-          attributes: ["id", "username", "email"],
+          attributes: ["id", "name", "email"],
         },
         {
           model: Dog,
@@ -370,7 +370,7 @@ export const getAppointmentsByCreatedByUserId = async (
         {
           model: User,
           as: "createdByUser",
-          attributes: ["id", "username", "email"],
+          attributes: ["id", "name", "email"],
         },
         {
           model: Dog,
