@@ -11,7 +11,7 @@ import {
 } from "@repo/ui";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/auth";
+import { getAccessToken, useAuth } from "@/lib/auth";
 
 // API 기본 URL
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
@@ -42,8 +42,18 @@ export default function Home() {
     const fetchShops = async () => {
       if (!isAuthenticated) return;
 
+      const accessToken = getAccessToken();
+      if (!accessToken) {
+        console.log("로그인이 필요합니다.");
+        return;
+      }
+
       try {
-        const response = await fetch(`${API_BASE_URL}/api/shops`);
+        const response = await fetch(`${API_BASE_URL}/api/shops`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
         const data = await response.json();
 
         if (response.ok && data.success) {
@@ -333,8 +343,7 @@ export default function Home() {
                       <button
                         onClick={() => {
                           setIsUserMenuOpen(false);
-                          // TODO: 직원 관리 페이지로 이동
-                          console.log("직원 관리");
+                          router.push("/employee");
                         }}
                         className="w-full text-left px-4 py-2 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
                       >

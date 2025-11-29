@@ -10,8 +10,8 @@ import { authMiddleware } from "../middlewares/auth.middleware";
 
 const router = Router();
 
-// 모든 샵 조회
-router.get("/", getAllShops);
+// 모든 샵 조회 (사용자가 속한 샵만)
+router.get("/", authMiddleware, getAllShops);
 
 // 특정 샵 조회
 router.get("/:id", getShopById);

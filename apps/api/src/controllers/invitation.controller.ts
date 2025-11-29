@@ -14,7 +14,7 @@ export const InvitationController = {
   async createInvitation(req: Request, res: Response): Promise<void> {
     try {
       const { shop_id, email, role = "staff" } = req.body;
-      const invitedByUserId = (req as any).user?.id;
+      const invitedByUserId = (req as any).user?.userId;
 
       if (!shop_id || !email) {
         res.status(400).json({
@@ -203,7 +203,7 @@ export const InvitationController = {
   async acceptInvitation(req: Request, res: Response): Promise<void> {
     try {
       const { token } = req.params;
-      const userId = (req as any).user?.id;
+      const userId = (req as any).user?.userId;
 
       if (!userId) {
         res.status(401).json({

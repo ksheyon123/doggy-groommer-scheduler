@@ -23,7 +23,15 @@ export default function GoogleCallbackPage() {
         const redirectUri = `${window.location.origin}/auth/callback/google`;
         const result = await handleGoogleCallback(code, redirectUri);
         login(result.user);
-        router.push("/");
+
+        // localStorage에서 returnUrl 확인
+        const returnUrl = localStorage.getItem("returnUrl");
+        if (returnUrl) {
+          localStorage.removeItem("returnUrl");
+          router.push(returnUrl);
+        } else {
+          router.push("/");
+        }
       } catch (err) {
         console.error("Google 로그인 실패:", err);
         setError(err instanceof Error ? err.message : "로그인에 실패했습니다.");

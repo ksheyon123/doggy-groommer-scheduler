@@ -36,7 +36,15 @@ export default function NaverCallbackPage() {
         );
         login(result.user);
         sessionStorage.removeItem("naver_oauth_state");
-        router.push("/");
+
+        // localStorage에서 returnUrl 확인
+        const returnUrl = localStorage.getItem("returnUrl");
+        if (returnUrl) {
+          localStorage.removeItem("returnUrl");
+          router.push(returnUrl);
+        } else {
+          router.push("/");
+        }
       } catch (err) {
         console.error("Naver 로그인 실패:", err);
         setError(err instanceof Error ? err.message : "로그인에 실패했습니다.");

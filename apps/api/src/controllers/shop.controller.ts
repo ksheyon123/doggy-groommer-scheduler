@@ -3,12 +3,35 @@ import { Shop } from "../models/Shop";
 import { Employee } from "../models/Employee";
 import { User } from "../models/User";
 
-// 모든 샵 조회
+// 사용자가 속한 샵 조회 (Owner 또는 Employee인 샵만)
 export const getAllShops = async (req: Request, res: Response) => {
   try {
-    const shops = await Shop.findAll({
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "인증이 필요합니다.",
+      });
+    }
+
+    // Employee 테이블에서 사용자가 속한 샵 조회
+    const employees = await Employee.findAll({
+      where: { user_id: userId },
+      include: [
+        {
+          model: Shop,
+        },
+      ],
       order: [["created_at", "DESC"]],
     });
+
+    // Shop 정보와 역할 정보를 합쳐서 반환
+    const shops = employees.map((emp) => ({
+      ...emp.shop.toJSON(),
+      role: emp.role,
+      employee_id: emp.id,
+    }));
 
     res.status(200).json({
       success: true,

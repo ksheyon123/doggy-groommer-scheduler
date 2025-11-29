@@ -5,6 +5,7 @@ import React from "react";
 interface LoginModalProps {
   isOpen: boolean;
   onClose?: () => void;
+  returnUrl?: string;
 }
 
 // OAuth URL 생성 함수들
@@ -61,10 +62,17 @@ const getNaverOAuthUrl = (): string => {
   return `https://nid.naver.com/oauth2.0/authorize?${params.toString()}`;
 };
 
-export function LoginModal({ isOpen, onClose }: LoginModalProps) {
+export function LoginModal({ isOpen, onClose, returnUrl }: LoginModalProps) {
   if (!isOpen) return null;
 
+  const saveReturnUrl = () => {
+    if (returnUrl && typeof window !== "undefined") {
+      localStorage.setItem("returnUrl", returnUrl);
+    }
+  };
+
   const handleGoogleLogin = () => {
+    saveReturnUrl();
     const url = getGoogleOAuthUrl();
     if (url) {
       window.location.href = url;
@@ -72,6 +80,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
   };
 
   const handleNaverLogin = () => {
+    saveReturnUrl();
     const url = getNaverOAuthUrl();
     if (url) {
       window.location.href = url;
@@ -79,6 +88,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
   };
 
   const handleKakaoLogin = () => {
+    saveReturnUrl();
     const url = getKakaoOAuthUrl();
     if (url) {
       window.location.href = url;

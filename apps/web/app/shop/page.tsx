@@ -114,9 +114,20 @@ export default function ShopManagementPage() {
 
   // 매장 목록 조회
   const fetchShops = async () => {
+    const accessToken = getAccessToken();
+    console.log(accessToken);
+    if (!accessToken) {
+      console.log("로그인이 필요합니다.");
+      return;
+    }
+
     setIsLoadingShops(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/shops`);
+      const response = await fetch(`${API_BASE_URL}/api/shops`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
       const data = await response.json();
       if (response.ok && data.success) {
         setShops(data.data);

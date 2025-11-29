@@ -38,7 +38,7 @@ export class EmailService {
     }
 
     const baseUrl = process.env.FRONTEND_URL || "http://localhost:3000";
-    const invitationLink = `${baseUrl}/invitation/accept?token=${invitation.token}`;
+    const invitationLink = `${baseUrl}/invite?token=${invitation.token}`;
     const expiresDate = new Date(invitation.expiresAt).toLocaleDateString(
       "ko-KR",
       {
