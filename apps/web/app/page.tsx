@@ -365,8 +365,7 @@ export default function Home() {
                       <button
                         onClick={() => {
                           setIsUserMenuOpen(false);
-                          // TODO: 매장 설정 페이지로 이동
-                          console.log("매장 설정");
+                          router.push("/shop/settings");
                         }}
                         className="w-full text-left px-4 py-2 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
                       >
@@ -430,11 +429,20 @@ export default function Home() {
 
       {/* 메인 콘텐츠 */}
       <main className="w-full max-w-4xl mx-auto p-8">
-        {viewMode === "daily" && <DailyView date={selectedDate} />}
+        {viewMode === "daily" && (
+          <DailyView
+            date={selectedDate}
+            onBackToWeekly={() => setViewMode("weekly")}
+          />
+        )}
         {viewMode === "weekly" && (
           <WeeklyView
             onDateSelect={handleDateSelect}
             selectedDate={selectedDate}
+            onDayClick={(date) => {
+              setSelectedDate(date);
+              setViewMode("daily");
+            }}
           />
         )}
         {(viewMode === "monthly" || viewMode === "yearly") && (

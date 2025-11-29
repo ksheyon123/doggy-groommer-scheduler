@@ -24,6 +24,7 @@ export interface DailyViewProps {
   groomers?: Groomer[];
   appointments?: Appointment[];
   onTimeSlotClick?: (groomerId: number, time: string) => void;
+  onBackToWeekly?: () => void;
 }
 
 // 더미 미용선생님 데이터
@@ -90,6 +91,7 @@ export function DailyView({
   groomers = defaultGroomers,
   appointments = defaultAppointments,
   onTimeSlotClick,
+  onBackToWeekly,
 }: DailyViewProps) {
   // 시간 문자열을 분으로 변환
   const timeToMinutes = (time: string) => {
@@ -134,10 +136,54 @@ export function DailyView({
   return (
     <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-800 overflow-hidden">
       {/* 날짜 헤더 */}
-      <div className="px-6 py-4 border-b border-zinc-200 dark:border-zinc-800">
-        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-          {formatDate(date)}
-        </h2>
+      <div className="px-6 py-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          {onBackToWeekly && (
+            <button
+              onClick={onBackToWeekly}
+              className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              aria-label="주간 뷰로 돌아가기"
+            >
+              <svg
+                className="w-5 h-5 text-zinc-600 dark:text-zinc-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
+            </button>
+          )}
+          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+            {formatDate(date)}
+          </h2>
+        </div>
+        {onBackToWeekly && (
+          <button
+            onClick={onBackToWeekly}
+            className="px-3 py-1.5 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-50 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md transition-colors flex items-center gap-1"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+              />
+            </svg>
+            주간 뷰
+          </button>
+        )}
       </div>
 
       {/* 미용선생님 + 시간대 그리드 */}

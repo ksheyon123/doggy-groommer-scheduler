@@ -5,6 +5,10 @@ import {
   createShop,
   updateShop,
   deleteShop,
+  getGroomingTypes,
+  addGroomingType,
+  updateGroomingType,
+  deleteGroomingType,
 } from "../controllers/shop.controller";
 import { authMiddleware } from "../middlewares/auth.middleware";
 
@@ -24,5 +28,22 @@ router.put("/:id", updateShop);
 
 // 샵 삭제
 router.delete("/:id", deleteShop);
+
+// 미용 타입 관련 라우트
+// 미용 타입 목록 조회
+router.get("/:id/grooming-types", authMiddleware, getGroomingTypes);
+
+// 미용 타입 추가
+router.post("/:id/grooming-types", authMiddleware, addGroomingType);
+
+// 미용 타입 수정
+router.put("/:id/grooming-types/:typeId", authMiddleware, updateGroomingType);
+
+// 미용 타입 삭제
+router.delete(
+  "/:id/grooming-types/:typeId",
+  authMiddleware,
+  deleteGroomingType
+);
 
 export default router;

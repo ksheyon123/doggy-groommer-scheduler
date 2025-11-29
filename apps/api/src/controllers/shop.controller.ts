@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { Shop } from "../models/Shop";
 import { Employee } from "../models/Employee";
 import { User } from "../models/User";
+import { GroomingType } from "../models/GroomingType";
 
 // 사용자가 속한 샵 조회 (Owner 또는 Employee인 샵만)
 export const getAllShops = async (req: Request, res: Response) => {
@@ -61,6 +62,9 @@ export const getShopById = async (req: Request, res: Response) => {
               attributes: ["id", "name", "email"],
             },
           ],
+        },
+        {
+          model: GroomingType,
         },
       ],
     });
@@ -204,6 +208,165 @@ export const deleteShop = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: "샵 삭제 중 오류가 발생했습니다.",
+      error: error instanceof Error ? error.message : "알 수 없는 오류",
+    });
+  }
+};
+
+// 미용 타입 목록 조회
+export const getGroomingTypes = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const shop = await Shop.findByPk(id);
+
+    if (!shop) {
+      return res.status(404).json({
+        success: false,
+        message: "샵을 찾을 수 없습니다.",
+      });
+    }
+
+    const groomingTypes = await GroomingType.findAll({
+      where: { shop_id: id },
+      order: [["created_at", "DESC"]],
+    });
+
+    res.status(200).json({
+      success: true,
+      data: groomingTypes,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "미용 타입 조회 중 오류가 발생했습니다.",
+      error: error instanceof Error ? error.message : "알 수 없는 오류",
+    });
+  }
+};
+
+// 미용 타입 추가
+export const addGroomingType = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { name, description } = req.body;
+
+    if (!name) {
+      return res.status(400).json({
+        success: false,
+        message: "name은 필수입니다.",
+      });
+    }
+
+    const shop = await Shop.findByPk(id);
+
+    if (!shop) {
+      return res.status(404).json({
+        success: false,
+        message: "샵을 찾을 수 없습니다.",
+      });
+    }
+
+    const newGroomingType = await GroomingType.create({
+      name,
+      description,
+      shop_id: id,
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "미용 타입이 추가되었습니다.",
+      data: newGroomingType,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "미용 타입 추가 중 오류가 발생했습니다.",
+      error: error instanceof Error ? error.message : "알 수 없는 오류",
+    });
+  }
+};
+
+// 미용 타입 수정
+export const updateGroomingType = async (req: Request, res: Response) => {
+  try {
+    const { id, typeId } = req.params;
+    const { name, description } = req.body;
+
+    const shop = await Shop.findByPk(id);
+
+    if (!shop) {
+      return res.status(404).json({
+        success: false,
+        message: "샵을 찾을 수 없습니다.",
+      });
+    }
+
+    const groomingType = await GroomingType.findOne({
+      where: { id: typeId, shop_id: id },
+    });
+
+    if (!groomingType) {
+      return res.status(404).json({
+        success: false,
+        message: "미용 타입을 찾을 수 없습니다.",
+      });
+    }
+
+    if (name !== undefined) groomingType.name = name;
+    if (description !== undefined) groomingType.description = description;
+
+    await groomingType.save();
+
+    res.status(200).json({
+      success: true,
+      message: "미용 타입이 수정되었습니다.",
+      data: groomingType,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "미용 타입 수정 중 오류가 발생했습니다.",
+      error: error instanceof Error ? error.message : "알 수 없는 오류",
+    });
+  }
+};
+
+// 미용 타입 삭제
+export const deleteGroomingType = async (req: Request, res: Response) => {
+  try {
+    const { id, typeId } = req.params;
+
+    const shop = await Shop.findByPk(id);
+
+    if (!shop) {
+      return res.status(404).json({
+        success: false,
+        message: "샵을 찾을 수 없습니다.",
+      });
+    }
+
+    const groomingType = await GroomingType.findOne({
+      where: { id: typeId, shop_id: id },
+    });
+
+    if (!groomingType) {
+      return res.status(404).json({
+        success: false,
+        message: "미용 타입을 찾을 수 없습니다.",
+      });
+    }
+
+    await groomingType.destroy();
+
+    res.status(200).json({
+      success: true,
+      message: "미용 타입이 삭제되었습니다.",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "미용 타입 삭제 중 오류가 발생했습니다.",
       error: error instanceof Error ? error.message : "알 수 없는 오류",
     });
   }

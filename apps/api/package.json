@@ -18,7 +18,8 @@
     "nodemailer": "^7.0.11",
     "reflect-metadata": "^0.2.2",
     "sequelize": "^6.37.7",
-    "sequelize-typescript": "^2.1.6"
+    "sequelize-typescript": "^2.1.6",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@repo/eslint-config": "*",
@@ -29,6 +30,7 @@
     "@types/node": "^20.10.0",
     "@types/nodemailer": "^7.0.4",
     "@types/sequelize": "^6.12.0",
+    "@types/uuid": "^11.0.0",
     "@types/validator": "^13.15.10",
     "eslint": "^9.39.1",
     "nodemon": "^3.0.1",

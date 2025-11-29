@@ -5,6 +5,7 @@ import { Employee } from "./Employee";
 import { Dog } from "./Dog";
 import { GroomingAppointment } from "./GroomingAppointment";
 import { ShopInvitation } from "./ShopInvitation";
+import { GroomingType } from "./GroomingType";
 
 const initDB = async () => {
   try {
@@ -29,4 +30,5 @@ export {
   Dog,
   GroomingAppointment,
   ShopInvitation,
+  GroomingType,
 };

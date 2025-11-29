@@ -19,6 +19,7 @@ interface WeeklyViewProps {
   onDateSelect?: (date: Date) => void;
   onTimeSlotSelect?: (date: Date, hour: number) => void;
   onAppointmentClick?: (appointment: WeeklyAppointment) => void;
+  onDayClick?: (date: Date) => void;
   selectedDate?: Date;
   appointments?: WeeklyAppointment[];
   className?: string;
@@ -166,6 +167,7 @@ export function WeeklyView({
   onDateSelect,
   onTimeSlotSelect,
   onAppointmentClick,
+  onDayClick,
   selectedDate,
   appointments: propAppointments,
   className = "",
@@ -347,7 +349,8 @@ export function WeeklyView({
               return (
                 <div
                   key={index}
-                  className={`p-3 text-center border-r border-zinc-200 dark:border-zinc-800 last:border-r-0 ${isToday ? "bg-blue-50 dark:bg-blue-900/20" : ""}`}
+                  className={`p-3 text-center border-r border-zinc-200 dark:border-zinc-800 last:border-r-0 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${isToday ? "bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30" : ""}`}
+                  onClick={() => onDayClick?.(date)}
                 >
                   <div
                     className={`text-sm font-medium ${index === 0 ? "text-red-500" : index === 6 ? "text-blue-500" : "text-zinc-600 dark:text-zinc-400"}`}

@@ -7,6 +7,7 @@ import { Employee } from "../models/Employee";
 import { Dog } from "../models/Dog";
 import { GroomingAppointment } from "../models/GroomingAppointment";
 import { ShopInvitation } from "../models/ShopInvitation";
+import { GroomingType } from "../models/GroomingType";
 
 dotenv.config();
 
@@ -17,7 +18,15 @@ const sequelize = new Sequelize({
   password: process.env.DB_PASSWORD,
   host: process.env.DB_HOST,
   port: parseInt(process.env.DB_PORT || "3306", 10),
-  models: [User, Shop, Employee, Dog, GroomingAppointment, ShopInvitation],
+  models: [
+    User,
+    Shop,
+    Employee,
+    Dog,
+    GroomingAppointment,
+    ShopInvitation,
+    GroomingType,
+  ],
   logging: false,
 });
 

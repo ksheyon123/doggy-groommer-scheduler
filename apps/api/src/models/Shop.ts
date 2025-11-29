@@ -2,6 +2,7 @@ import { Table, Column, Model, DataType, HasMany } from "sequelize-typescript";
 import { Employee } from "./Employee";
 import { Dog } from "./Dog";
 import { GroomingAppointment } from "./GroomingAppointment";
+import { GroomingType } from "./GroomingType";
 
 @Table({
   tableName: "shops",
@@ -36,4 +37,7 @@ export class Shop extends Model {
 
   @HasMany(() => GroomingAppointment)
   groomingAppointments!: GroomingAppointment[];
+
+  @HasMany(() => GroomingType)
+  groomingTypes!: GroomingType[];
 }
