@@ -737,6 +737,264 @@ USER ||--o{ DOG : "assigned to"
 
 ---
 
+## 직원 초대 (Invitations) API
+
+샵에 직원을 초대하는 API입니다. Google SMTP를 사용하여 초대 이메일을 발송합니다.
+
+### 환경 변수 설정
+
+이메일 기능을 사용하려면 다음 환경 변수를 설정해야 합니다:
+
+```bash
+GMAIL_USER=your-email@gmail.com
+GMAIL_APP_PASSWORD=your-16-digit-app-password
+FRONTEND_URL=http://localhost:3000
+```
+
+**Gmail 앱 비밀번호 생성 방법**:
+
+1. Google 계정 설정 > 보안 > 2단계 인증 활성화
+2. Google 계정 설정 > 보안 > 앱 비밀번호 생성
+3. "메일" 앱과 기기 선택 후 생성된 16자리 비밀번호 사용
+
+### 초대 흐름
+
+```
+1. [초대 발송] POST /api/invitations
+   → ShopInvitation 레코드 생성 + 이메일 발송
+
+2. [초대 링크 클릭]
+   → 프론트엔드 /invitation/accept?token=xxx 페이지로 이동
+
+3. [초대 정보 조회] GET /api/invitations/token/:token
+   → 초대 정보 표시 (샵 이름, 역할 등)
+
+4. [소셜 로그인]
+   → 로그인 후 토큰을 localStorage에 저장
+
+5. [초대 수락] POST /api/invitations/token/:token/accept
+   → Employee 생성 → 초대 완료
+```
+
+---
+
+### 1. 직원 초대 발송
+
+샵에 새로운 직원을 초대합니다. (인증 필요)
+
+**Endpoint**: `POST /api/invitations`
+
+**Headers**:
+
+```
+Authorization: Bearer <accessToken>
+```
+
+**Request Body**:
+
+```json
+{
+  "shop_id": 1,
+  "email": "newstaff@example.com",
+  "role": "staff"
+}
+```
+
+**Required Fields**:
+
+- `shop_id`: 초대할 샵 ID
+- `email`: 초대받을 이메일
+
+**Optional Fields**:
+
+- `role`: 부여할 역할 (기본값: "staff")
+
+**Response**:
+
+```json
+{
+  "success": true,
+  "message": "초대가 발송되었습니다.",
+  "data": {
+    "id": 1,
+    "email": "newstaff@example.com",
+    "role": "staff",
+    "expires_at": "2024-01-22T00:00:00.000Z"
+  }
+}
+```
+
+---
+
+### 2. 초대 정보 조회 (토큰으로)
+
+초대 토큰으로 초대 정보를 조회합니다. (인증 불필요 - 초대 페이지 표시용)
+
+**Endpoint**: `GET /api/invitations/token/:token`
+
+**Parameters**:
+
+- `token` (required): 초대 토큰
+
+**Response**:
+
+```json
+{
+  "success": true,
+  "data": {
+    "email": "newstaff@example.com",
+    "role": "staff",
+    "expires_at": "2024-01-22T00:00:00.000Z",
+    "shop": {
+      "id": 1,
+      "name": "해피독 미용실"
+    }
+  }
+}
+```
+
+---
+
+### 3. 초대 수락
+
+초대를 수락하고 직원으로 등록됩니다. (인증 필요)
+
+**Endpoint**: `POST /api/invitations/token/:token/accept`
+
+**Headers**:
+
+```
+Authorization: Bearer <accessToken>
+```
+
+**Parameters**:
+
+- `token` (required): 초대 토큰
+
+**Response**:
+
+```json
+{
+  "success": true,
+  "message": "초대를 수락했습니다.",
+  "data": {
+    "shop": {
+      "id": 1,
+      "name": "해피독 미용실"
+    },
+    "role": "staff"
+  }
+}
+```
+
+**에러 케이스**:
+
+- 만료된 초대: 400 에러
+- 이미 수락된 초대: 400 에러
+- 초대받은 이메일과 로그인 이메일 불일치: 403 에러
+
+---
+
+### 4. 샵의 초대 목록 조회
+
+특정 샵의 모든 초대 목록을 조회합니다. (인증 필요)
+
+**Endpoint**: `GET /api/invitations/shop/:shopId`
+
+**Headers**:
+
+```
+Authorization: Bearer <accessToken>
+```
+
+**Parameters**:
+
+- `shopId` (required): 샵 ID
+
+**Response**:
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "shop_id": 1,
+      "invited_by_user_id": 1,
+      "email": "newstaff@example.com",
+      "role": "staff",
+      "status": "pending",
+      "expires_at": "2024-01-22T00:00:00.000Z",
+      "created_at": "2024-01-15T00:00:00.000Z",
+      "invitedByUser": {
+        "id": 1,
+        "name": "홍길동",
+        "email": "owner@example.com"
+      }
+    }
+  ]
+}
+```
+
+---
+
+### 5. 초대 취소
+
+대기 중인 초대를 취소합니다. (인증 필요)
+
+**Endpoint**: `DELETE /api/invitations/:id`
+
+**Headers**:
+
+```
+Authorization: Bearer <accessToken>
+```
+
+**Parameters**:
+
+- `id` (required): 초대 ID
+
+**Response**:
+
+```json
+{
+  "success": true,
+  "message": "초대가 취소되었습니다."
+}
+```
+
+---
+
+### 6. 초대 재발송
+
+대기 중인 초대를 재발송합니다. 새 토큰이 생성되고 만료일이 연장됩니다. (인증 필요)
+
+**Endpoint**: `POST /api/invitations/:id/resend`
+
+**Headers**:
+
+```
+Authorization: Bearer <accessToken>
+```
+
+**Parameters**:
+
+- `id` (required): 초대 ID
+
+**Response**:
+
+```json
+{
+  "success": true,
+  "message": "초대가 재발송되었습니다.",
+  "data": {
+    "expires_at": "2024-01-29T00:00:00.000Z"
+  }
+}
+```
+
+---
+
 ## 에러 응답
 
 모든 API는 에러 발생 시 다음 형식으로 응답합니다:

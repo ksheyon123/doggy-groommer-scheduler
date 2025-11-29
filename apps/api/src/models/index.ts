@@ -4,6 +4,7 @@ import { Shop } from "./Shop";
 import { Employee } from "./Employee";
 import { Dog } from "./Dog";
 import { GroomingAppointment } from "./GroomingAppointment";
+import { ShopInvitation } from "./ShopInvitation";
 
 const initDB = async () => {
   try {
@@ -19,4 +20,13 @@ const initDB = async () => {
   }
 };
 
-export { sequelize, initDB, User, Shop, Employee, Dog, GroomingAppointment };
+export {
+  sequelize,
+  initDB,
+  User,
+  Shop,
+  Employee,
+  Dog,
+  GroomingAppointment,
+  ShopInvitation,
+};
