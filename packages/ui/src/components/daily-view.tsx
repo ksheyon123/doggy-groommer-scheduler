@@ -24,6 +24,7 @@ export interface DailyViewProps {
   groomers?: Groomer[];
   appointments?: Appointment[];
   onTimeSlotClick?: (groomerId: number, time: string) => void;
+  onAppointmentClick?: (appointment: Appointment) => void;
   onBackToWeekly?: () => void;
 }
 
@@ -38,8 +39,9 @@ export function DailyView({
   date,
   groomers = [],
   appointments = [],
-  onTimeSlotClick,
   onBackToWeekly,
+  onTimeSlotClick,
+  onAppointmentClick,
 }: DailyViewProps) {
   // 그리드 열 수 계산 (최소 1개)
   const gridColCount = Math.max(groomers.length, 1);
@@ -197,6 +199,10 @@ export function DailyView({
                           className={`absolute inset-x-1 top-1 ${groomer.color} border rounded-md p-2 z-10 cursor-pointer hover:shadow-md transition-shadow`}
                           style={{
                             height: `calc(${getAppointmentSlotCount(appointment) * 100}% - 8px)`,
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onAppointmentClick?.(appointment);
                           }}
                         >
                           <div className="text-xs font-semibold text-zinc-800 truncate">

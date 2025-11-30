@@ -105,6 +105,22 @@ export default function Home() {
   const [groomers, setGroomers] = useState<GroomerItem[]>([]);
   const [appointments, setAppointments] = useState<ApiAppointment[]>([]);
 
+  // 예약 수정 모달 상태
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editAppointmentData, setEditAppointmentData] = useState<{
+    id: number;
+    dog_id: number;
+    dogName: string;
+    dogBreed?: string;
+    ownerName?: string;
+    assigned_user_id: number | null;
+    appointment_at: string;
+    start_time: string;
+    end_time: string;
+    memo: string;
+    grooming_type: string;
+  } | null>(null);
+
   const router = useRouter();
   const userMenuRef = useRef<HTMLDivElement>(null);
   const shopDropdownRef = useRef<HTMLDivElement>(null);
@@ -443,7 +459,33 @@ export default function Home() {
     };
   };
 
-  // 예약 등록 API
+  // 예약 목록 새로고침
+  const refreshAppointments = async () => {
+    if (!selectedShop) return;
+
+    const accessToken = getAccessToken();
+    if (!accessToken) return;
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/appointments/shop/${selectedShop.id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setAppointments(data.data);
+      }
+    } catch (error) {
+      console.error("예약 목록 조회 실패:", error);
+    }
+  };
+
+  // 예약 등록/수정 API
   const handleAppointmentSubmit = async (
     formData: AppointmentFormData
   ): Promise<void> => {
@@ -456,6 +498,39 @@ export default function Home() {
       throw new Error("로그인이 필요합니다.");
     }
 
+    // 수정 모드
+    if (isEditMode && formData.id) {
+      const response = await fetch(
+        `${API_BASE_URL}/api/appointments/${formData.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({
+            assigned_user_id: formData.assigned_user_id,
+            grooming_type: formData.grooming_type,
+            memo: formData.memo,
+            appointment_at: formData.appointment_at,
+            start_time: formData.start_time,
+            end_time: formData.end_time,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "예약 수정에 실패했습니다.");
+      }
+
+      // 예약 목록 새로고침
+      await refreshAppointments();
+      return;
+    }
+
+    // 등록 모드
     const response = await fetch(`${API_BASE_URL}/api/appointments`, {
       method: "POST",
       headers: {
@@ -480,6 +555,90 @@ export default function Home() {
     if (!response.ok || !data.success) {
       throw new Error(data.message || "예약 등록에 실패했습니다.");
     }
+
+    // 예약 목록 새로고침
+    await refreshAppointments();
+  };
+
+  // 예약 삭제 API
+  const handleAppointmentDelete = async (id: number): Promise<void> => {
+    const accessToken = getAccessToken();
+    if (!accessToken) {
+      throw new Error("로그인이 필요합니다.");
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/appointments/${id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || "예약 삭제에 실패했습니다.");
+    }
+
+    // 예약 목록 새로고침
+    await refreshAppointments();
+  };
+
+  // 예약 클릭 시 수정 모달 열기 (Weekly View)
+  const handleWeeklyAppointmentClick = (appointment: WeeklyAppointment) => {
+    // 원본 API 데이터에서 해당 예약 찾기
+    const apiAppointment = appointments.find(
+      (apt) => apt.id === appointment.id
+    );
+    if (!apiAppointment) return;
+
+    setIsEditMode(true);
+    setEditAppointmentData({
+      id: apiAppointment.id,
+      dog_id: apiAppointment.dog_id,
+      dogName: apiAppointment.Dog?.name || "",
+      dogBreed: apiAppointment.Dog?.breed,
+      ownerName: undefined, // Dog 모델에 owner_name이 없으므로 undefined
+      assigned_user_id: apiAppointment.assigned_user_id || null,
+      appointment_at: apiAppointment.appointment_at,
+      start_time: formatTime(apiAppointment.start_time),
+      end_time: formatTime(apiAppointment.end_time),
+      memo: apiAppointment.memo || "",
+      grooming_type: apiAppointment.grooming_type || "",
+    });
+    setIsAppointmentModalOpen(true);
+  };
+
+  // 예약 클릭 시 수정 모달 열기 (Daily View)
+  const handleDailyAppointmentClick = (appointment: DailyAppointment) => {
+    // 원본 API 데이터에서 해당 예약 찾기
+    const apiAppointment = appointments.find(
+      (apt) => apt.id === appointment.id
+    );
+    if (!apiAppointment) return;
+
+    setIsEditMode(true);
+    setEditAppointmentData({
+      id: apiAppointment.id,
+      dog_id: apiAppointment.dog_id,
+      dogName: apiAppointment.Dog?.name || "",
+      dogBreed: apiAppointment.Dog?.breed,
+      ownerName: undefined,
+      assigned_user_id: apiAppointment.assigned_user_id || null,
+      appointment_at: apiAppointment.appointment_at,
+      start_time: formatTime(apiAppointment.start_time),
+      end_time: formatTime(apiAppointment.end_time),
+      memo: apiAppointment.memo || "",
+      grooming_type: apiAppointment.grooming_type || "",
+    });
+    setIsAppointmentModalOpen(true);
+  };
+
+  // 모달 닫기 핸들러
+  const handleModalClose = () => {
+    setIsAppointmentModalOpen(false);
+    setIsEditMode(false);
+    setEditAppointmentData(null);
   };
 
   return (
@@ -490,11 +649,12 @@ export default function Home() {
         onClose={() => setShowLoginModal(false)}
       />
 
-      {/* 예약 등록 모달 */}
+      {/* 예약 등록/수정 모달 */}
       <AppointmentFormModal
         isOpen={isAppointmentModalOpen}
-        onClose={() => setIsAppointmentModalOpen(false)}
+        onClose={handleModalClose}
         onSubmit={handleAppointmentSubmit}
+        onDelete={handleAppointmentDelete}
         onSearchDog={handleSearchDog}
         onRegisterDog={handleRegisterDog}
         groomingTypes={groomingTypes}
@@ -503,6 +663,8 @@ export default function Home() {
         initialTime={appointmentInitialTime}
         groomerId={selectedGroomer?.id}
         groomerName={selectedGroomer?.name}
+        editMode={isEditMode}
+        editData={editAppointmentData || undefined}
       />
 
       {/* 헤더 */}
@@ -773,6 +935,7 @@ export default function Home() {
             appointments={dailyAppointments}
             onBackToWeekly={() => setViewMode("weekly")}
             onTimeSlotClick={handleTimeSlotClick}
+            onAppointmentClick={handleDailyAppointmentClick}
           />
         )}
         {viewMode === "weekly" && (
@@ -784,6 +947,7 @@ export default function Home() {
               setSelectedDate(date);
               setViewMode("daily");
             }}
+            onAppointmentClick={handleWeeklyAppointmentClick}
           />
         )}
         {(viewMode === "monthly" || viewMode === "yearly") && (

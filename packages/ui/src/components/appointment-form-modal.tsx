@@ -26,6 +26,7 @@ export interface GroomerItem {
 }
 
 export interface AppointmentFormData {
+  id?: number; // 수정 시 예약 ID
   dog_id: number | null;
   dogName: string;
   assigned_user_id: number | null;
@@ -48,6 +49,7 @@ export interface AppointmentFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: AppointmentFormData) => Promise<void>;
+  onDelete?: (id: number) => Promise<void>;
   onSearchDog: (query: string) => Promise<DogSearchItem[]>;
   onRegisterDog?: (data: DogRegisterData) => Promise<DogSearchItem>;
   groomingTypes?: GroomingTypeItem[];
@@ -56,12 +58,28 @@ export interface AppointmentFormModalProps {
   initialTime?: string;
   groomerId?: number;
   groomerName?: string;
+  // 수정 모드용 props
+  editMode?: boolean;
+  editData?: {
+    id: number;
+    dog_id: number;
+    dogName: string;
+    dogBreed?: string;
+    ownerName?: string;
+    assigned_user_id: number | null;
+    appointment_at: string;
+    start_time: string;
+    end_time: string;
+    memo: string;
+    grooming_type: string;
+  };
 }
 
 export function AppointmentFormModal({
   isOpen,
   onClose,
   onSubmit,
+  onDelete,
   onSearchDog,
   onRegisterDog,
   groomingTypes = [],
@@ -70,6 +88,8 @@ export function AppointmentFormModal({
   initialTime,
   groomerId,
   groomerName,
+  editMode = false,
+  editData,
 }: AppointmentFormModalProps) {
   const [formData, setFormData] = useState<AppointmentFormData>({
     dog_id: null,
@@ -98,19 +118,42 @@ export function AppointmentFormModal({
   // 초기값 설정
   useEffect(() => {
     if (isOpen) {
-      setFormData((prev) => ({
-        ...prev,
-        appointment_at: initialDate || prev.appointment_at,
-        start_time: initialTime || prev.start_time,
-        assigned_user_id: groomerId || prev.assigned_user_id,
-      }));
+      if (editMode && editData) {
+        // 수정 모드: editData로 폼 초기화
+        setFormData({
+          id: editData.id,
+          dog_id: editData.dog_id,
+          dogName: editData.dogName,
+          assigned_user_id: editData.assigned_user_id,
+          appointment_at: editData.appointment_at,
+          start_time: editData.start_time,
+          end_time: editData.end_time,
+          memo: editData.memo,
+          grooming_type: editData.grooming_type,
+        });
+        setSelectedDog({
+          id: editData.dog_id,
+          name: editData.dogName,
+          breed: editData.dogBreed || "",
+          owner_name: editData.ownerName || "",
+        });
+      } else {
+        // 등록 모드: 기존 로직
+        setFormData((prev) => ({
+          ...prev,
+          appointment_at: initialDate || prev.appointment_at,
+          start_time: initialTime || prev.start_time,
+          assigned_user_id: groomerId || prev.assigned_user_id,
+        }));
+      }
     }
-  }, [isOpen, initialDate, initialTime, groomerId]);
+  }, [isOpen, initialDate, initialTime, groomerId, editMode, editData]);
 
   // 모달 닫을 때 폼 초기화
   useEffect(() => {
     if (!isOpen) {
       setFormData({
+        id: undefined,
         dog_id: null,
         dogName: "",
         assigned_user_id: null,
@@ -124,6 +167,26 @@ export function AppointmentFormModal({
       setIsDogRegisterOpen(false);
     }
   }, [isOpen]);
+
+  // 삭제 처리
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const handleDelete = async () => {
+    if (!editData?.id || !onDelete) return;
+
+    setIsDeleting(true);
+    try {
+      await onDelete(editData.id);
+      onClose();
+    } catch (error) {
+      console.error("예약 삭제 실패:", error);
+      alert("예약 삭제 중 오류가 발생했습니다.");
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
 
   const handleDogSelect = (dog: DogSearchItem) => {
     setSelectedDog(dog);
@@ -220,7 +283,7 @@ export function AppointmentFormModal({
         <div className="px-6 py-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
           <div>
             <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-              예약 등록
+              {editMode ? "예약 수정" : "예약 등록"}
             </h2>
             {groomerName && !groomers.length && (
               <p className="text-sm text-zinc-500 dark:text-zinc-400">
@@ -255,9 +318,10 @@ export function AppointmentFormModal({
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                  강아지 검색 <span className="text-red-500">*</span>
+                  강아지 {editMode ? "" : "검색"}{" "}
+                  <span className="text-red-500">*</span>
                 </label>
-                {onRegisterDog && (
+                {!editMode && onRegisterDog && (
                   <button
                     type="button"
                     onClick={() => setIsDogRegisterOpen(true)}
@@ -280,13 +344,17 @@ export function AppointmentFormModal({
                   </button>
                 )}
               </div>
-              <SearchDropdown
-                placeholder="강아지 이름으로 검색..."
-                onSearch={onSearchDog}
-                onSelect={handleDogSelect}
-              />
+              {!editMode && (
+                <SearchDropdown
+                  placeholder="강아지 이름으로 검색..."
+                  onSearch={onSearchDog}
+                  onSelect={handleDogSelect}
+                />
+              )}
               {selectedDog && (
-                <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <div
+                  className={`${editMode ? "" : "mt-2"} p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg`}
+                >
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium text-zinc-900 dark:text-zinc-100">
@@ -301,32 +369,34 @@ export function AppointmentFormModal({
                         )}
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedDog(null);
-                        setFormData((prev) => ({
-                          ...prev,
-                          dog_id: null,
-                          dogName: "",
-                        }));
-                      }}
-                      className="text-zinc-400 hover:text-zinc-600"
-                    >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
+                    {!editMode && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedDog(null);
+                          setFormData((prev) => ({
+                            ...prev,
+                            dog_id: null,
+                            dogName: "",
+                          }));
+                        }}
+                        className="text-zinc-400 hover:text-zinc-600"
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M6 18L18 6M6 6l12 12"
-                        />
-                      </svg>
-                    </button>
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M6 18L18 6M6 6l12 12"
+                          />
+                        </svg>
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
@@ -521,25 +591,93 @@ export function AppointmentFormModal({
           </div>
 
           {/* Footer */}
-          <div className="px-6 py-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50 flex justify-end gap-3">
-            <Button
-              type="button"
-              variant="flat"
-              onClick={onClose}
-              disabled={isSubmitting}
-            >
-              취소
-            </Button>
-            <Button
-              type="submit"
-              color="primary"
-              disabled={isSubmitting || !formData.dog_id}
-            >
-              {isSubmitting ? <Spinner size="sm" /> : "예약 등록"}
-            </Button>
+          <div className="px-6 py-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50 flex justify-between">
+            {/* 삭제 버튼 (수정 모드에서만) */}
+            <div>
+              {editMode && onDelete && (
+                <Button
+                  type="button"
+                  color="danger"
+                  variant="flat"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  disabled={isSubmitting || isDeleting}
+                >
+                  삭제
+                </Button>
+              )}
+            </div>
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                variant="flat"
+                onClick={onClose}
+                disabled={isSubmitting || isDeleting}
+              >
+                취소
+              </Button>
+              <Button
+                type="submit"
+                color="primary"
+                disabled={isSubmitting || isDeleting || !formData.dog_id}
+              >
+                {isSubmitting ? (
+                  <Spinner size="sm" />
+                ) : editMode ? (
+                  "수정"
+                ) : (
+                  "예약 등록"
+                )}
+              </Button>
+            </div>
           </div>
         </form>
       </div>
+
+      {/* 삭제 확인 모달 */}
+      {showDeleteConfirm && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowDeleteConfirm(false);
+            }
+          }}
+        >
+          <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-zinc-200 dark:border-zinc-800">
+              <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+                예약 삭제
+              </h3>
+            </div>
+            <div className="px-6 py-4">
+              <p className="text-zinc-600 dark:text-zinc-400">
+                정말로 이 예약을 삭제하시겠습니까?
+              </p>
+              <p className="text-sm text-zinc-500 dark:text-zinc-500 mt-2">
+                이 작업은 되돌릴 수 없습니다.
+              </p>
+            </div>
+            <div className="px-6 py-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50 flex justify-end gap-3">
+              <Button
+                type="button"
+                variant="flat"
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={isDeleting}
+              >
+                취소
+              </Button>
+              <Button
+                type="button"
+                color="danger"
+                onClick={handleDelete}
+                disabled={isDeleting}
+              >
+                {isDeleting ? <Spinner size="sm" /> : "삭제"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 강아지 등록 모달 */}
       {isDogRegisterOpen && (
