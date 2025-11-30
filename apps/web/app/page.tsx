@@ -6,8 +6,13 @@ import {
   WeeklyView,
   ViewModeDropdown,
   LoginModal,
-  useModal,
+  AppointmentFormModal,
   type ViewMode,
+  type DogSearchItem,
+  type AppointmentFormData,
+  type GroomingTypeItem,
+  type GroomerItem,
+  type DogRegisterData,
 } from "@repo/ui";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -24,6 +29,13 @@ interface Shop {
   phone?: string;
 }
 
+// Groomer 타입
+interface Groomer {
+  id: number;
+  name: string;
+  color: string;
+}
+
 export default function Home() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>("weekly");
@@ -32,10 +44,27 @@ export default function Home() {
   const [shops, setShops] = useState<Shop[]>([]);
   const [selectedShop, setSelectedShop] = useState<Shop | null>(null);
   const [isShopDropdownOpen, setIsShopDropdownOpen] = useState(false);
+
+  // 예약 모달 상태
+  const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false);
+  const [appointmentInitialDate, setAppointmentInitialDate] = useState("");
+  const [appointmentInitialTime, setAppointmentInitialTime] = useState("");
+  const [selectedGroomer, setSelectedGroomer] = useState<Groomer | null>(null);
+  const [groomingTypes, setGroomingTypes] = useState<GroomingTypeItem[]>([]);
+  const [groomers, setGroomers] = useState<GroomerItem[]>([]);
+
   const router = useRouter();
   const userMenuRef = useRef<HTMLDivElement>(null);
   const shopDropdownRef = useRef<HTMLDivElement>(null);
   const { user, isAuthenticated, isLoading, logout } = useAuth();
+
+  // 날짜를 YYYY-MM-DD 형식으로 포맷
+  const formatDateForInput = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
 
   // 매장 목록 가져오기
   useEffect(() => {
@@ -71,6 +100,73 @@ export default function Home() {
     fetchShops();
   }, [isAuthenticated]);
 
+  // 미용 종류 가져오기
+  useEffect(() => {
+    const fetchGroomingTypes = async () => {
+      if (!selectedShop) return;
+
+      const accessToken = getAccessToken();
+      if (!accessToken) return;
+
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/api/shops/${selectedShop.id}/grooming-types`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          }
+        );
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          setGroomingTypes(data.data);
+        }
+      } catch (error) {
+        console.error("미용 종류 조회 실패:", error);
+      }
+    };
+
+    fetchGroomingTypes();
+  }, [selectedShop]);
+
+  // 직원(미용사) 목록 가져오기
+  useEffect(() => {
+    const fetchGroomers = async () => {
+      if (!selectedShop) return;
+
+      const accessToken = getAccessToken();
+      if (!accessToken) return;
+
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/api/employees/shop/${selectedShop.id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          }
+        );
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          // Employee 데이터를 GroomerItem 형태로 변환
+          const groomerList: GroomerItem[] = data.data.map((emp: any) => ({
+            id: emp.id,
+            user_id: emp.user_id,
+            name: emp.user?.name || "이름 없음",
+            role: emp.role,
+          }));
+          setGroomers(groomerList);
+        }
+      } catch (error) {
+        console.error("직원 목록 조회 실패:", error);
+      }
+    };
+
+    fetchGroomers();
+  }, [selectedShop]);
+
   // 사용자 메뉴 및 매장 드롭다운 외부 클릭 감지
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -100,64 +196,142 @@ export default function Home() {
     setShowLoginModal(true);
   };
 
-  const { showModal } = useModal();
-
-  // 날짜를 YYYY/MM/DD 형식으로 포맷
-  const formatDate = (date: Date): string => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    return `${year}/${month}/${day}`;
-  };
-
+  // 날짜 선택 시 (캘린더에서)
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
+    setAppointmentInitialDate(formatDateForInput(date));
+    setAppointmentInitialTime("");
+    setSelectedGroomer(null);
+    setIsAppointmentModalOpen(true);
+  };
 
-    // Modal 사용 예시
-    showModal(
-      {
-        header: "예약 확인",
-        body: (onConfirm, onReject, onClose) => (
-          <div className="space-y-3">
-            <p>
-              <strong>{formatDate(date)}</strong>에 예약을 추가하시겠습니까?
-            </p>
-            <p className="text-sm text-zinc-500">
-              예약을 추가하면 해당 날짜에 미용 일정이 등록됩니다.
-            </p>
-          </div>
-        ),
-        footer: (onConfirm, onReject, onClose) => (
-          <div className="flex justify-end gap-3">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-200 dark:bg-zinc-700 rounded-lg hover:bg-zinc-300 dark:hover:bg-zinc-600 transition-colors"
-            >
-              나중에
-            </button>
-            <button
-              onClick={onReject}
-              className="px-4 py-2 text-sm font-medium text-red-600 bg-red-100 dark:bg-red-900/30 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
-            >
-              취소
-            </button>
-            <button
-              onClick={onConfirm}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              예약 추가
-            </button>
-          </div>
-        ),
-      },
-      () => {
-        console.log("예약 확인됨:", date);
-        // 여기에 예약 추가 로직
-      },
-      () => {
-        console.log("예약 취소됨");
+  // 시간 슬롯 클릭 시 (일일 뷰에서)
+  const handleTimeSlotClick = (groomerId: number, time: string) => {
+    // 더미 groomer 데이터에서 찾기 (실제로는 API에서 가져와야 함)
+    const groomers: Groomer[] = [
+      { id: 1, name: "김미용", color: "bg-pink-100 border-pink-300" },
+      { id: 2, name: "이가위", color: "bg-blue-100 border-blue-300" },
+      { id: 3, name: "박샴푸", color: "bg-green-100 border-green-300" },
+      { id: 4, name: "최드라이", color: "bg-purple-100 border-purple-300" },
+    ];
+
+    const groomer = groomers.find((g) => g.id === groomerId);
+
+    setAppointmentInitialDate(formatDateForInput(selectedDate));
+    setAppointmentInitialTime(time);
+    setSelectedGroomer(groomer || null);
+    setIsAppointmentModalOpen(true);
+  };
+
+  // 강아지 검색 API
+  const handleSearchDog = async (query: string): Promise<DogSearchItem[]> => {
+    if (!selectedShop) return [];
+
+    const accessToken = getAccessToken();
+    if (!accessToken) return [];
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/dogs/search?name=${encodeURIComponent(query)}&shopId=${selectedShop.id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        return data.data;
       }
-    );
+      return [];
+    } catch (error) {
+      console.error("강아지 검색 실패:", error);
+      return [];
+    }
+  };
+
+  // 강아지 등록 API
+  const handleRegisterDog = async (
+    dogData: DogRegisterData
+  ): Promise<DogSearchItem> => {
+    if (!selectedShop) {
+      throw new Error("매장 정보가 없습니다.");
+    }
+
+    const accessToken = getAccessToken();
+    if (!accessToken) {
+      throw new Error("로그인이 필요합니다.");
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/dogs`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        shop_id: selectedShop.id,
+        name: dogData.name,
+        breed: dogData.breed,
+        owner_name: dogData.owner_name,
+        owner_phone_number: dogData.owner_phone_number,
+        note: dogData.note,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || "강아지 등록에 실패했습니다.");
+    }
+
+    // DogSearchItem 형태로 반환
+    return {
+      id: data.data.id,
+      name: data.data.name,
+      owner_name: data.data.owner_name,
+      breed: data.data.breed,
+    };
+  };
+
+  // 예약 등록 API
+  const handleAppointmentSubmit = async (
+    formData: AppointmentFormData
+  ): Promise<void> => {
+    if (!selectedShop || !user) {
+      throw new Error("매장 또는 사용자 정보가 없습니다.");
+    }
+
+    const accessToken = getAccessToken();
+    if (!accessToken) {
+      throw new Error("로그인이 필요합니다.");
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/appointments`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        shop_id: selectedShop.id,
+        dog_id: formData.dog_id,
+        created_by_user_id: user.id,
+        assigned_user_id: formData.assigned_user_id || selectedGroomer?.id,
+        grooming_type: formData.grooming_type,
+        memo: formData.memo,
+        appointment_at: formData.appointment_at,
+        start_time: formData.start_time,
+        end_time: formData.end_time,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || "예약 등록에 실패했습니다.");
+    }
   };
 
   return (
@@ -166,6 +340,21 @@ export default function Home() {
       <LoginModal
         isOpen={showLoginModal || (!isLoading && !isAuthenticated)}
         onClose={() => setShowLoginModal(false)}
+      />
+
+      {/* 예약 등록 모달 */}
+      <AppointmentFormModal
+        isOpen={isAppointmentModalOpen}
+        onClose={() => setIsAppointmentModalOpen(false)}
+        onSubmit={handleAppointmentSubmit}
+        onSearchDog={handleSearchDog}
+        onRegisterDog={handleRegisterDog}
+        groomingTypes={groomingTypes}
+        groomers={groomers}
+        initialDate={appointmentInitialDate}
+        initialTime={appointmentInitialTime}
+        groomerId={selectedGroomer?.id}
+        groomerName={selectedGroomer?.name}
       />
 
       {/* 헤더 */}
@@ -433,6 +622,7 @@ export default function Home() {
           <DailyView
             date={selectedDate}
             onBackToWeekly={() => setViewMode("weekly")}
+            onTimeSlotClick={handleTimeSlotClick}
           />
         )}
         {viewMode === "weekly" && (

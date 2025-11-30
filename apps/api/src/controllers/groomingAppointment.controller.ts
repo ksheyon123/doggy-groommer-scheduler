@@ -98,6 +98,8 @@ export const createAppointment = async (req: Request, res: Response) => {
       memo,
       amount,
       appointment_at,
+      start_time,
+      end_time,
       status,
     } = req.body;
 
@@ -152,6 +154,8 @@ export const createAppointment = async (req: Request, res: Response) => {
       memo,
       amount,
       appointment_at,
+      start_time,
+      end_time,
       status: status || "scheduled",
     });
 
@@ -194,7 +198,15 @@ export const createAppointment = async (req: Request, res: Response) => {
 export const updateAppointment = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { grooming_type, memo, amount, appointment_at, status } = req.body;
+    const {
+      grooming_type,
+      memo,
+      amount,
+      appointment_at,
+      start_time,
+      end_time,
+      status,
+    } = req.body;
 
     const appointment = await GroomingAppointment.findByPk(id);
 
@@ -211,6 +223,8 @@ export const updateAppointment = async (req: Request, res: Response) => {
     if (amount !== undefined) appointment.amount = amount;
     if (appointment_at !== undefined)
       appointment.appointment_at = appointment_at;
+    if (start_time !== undefined) appointment.start_time = start_time;
+    if (end_time !== undefined) appointment.end_time = end_time;
     if (status !== undefined) appointment.status = status;
 
     await appointment.save();

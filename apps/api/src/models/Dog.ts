@@ -7,7 +7,6 @@ import {
   BelongsTo,
   HasMany,
 } from "sequelize-typescript";
-import { User } from "./User";
 import { Shop } from "./Shop";
 import { GroomingAppointment } from "./GroomingAppointment";
 
@@ -28,16 +27,6 @@ export class Dog extends Model {
   @BelongsTo(() => Shop)
   shop!: Shop;
 
-  @ForeignKey(() => User)
-  @Column({
-    type: DataType.INTEGER,
-    allowNull: true,
-  })
-  assigned_user_id!: number;
-
-  @BelongsTo(() => User)
-  assignedUser!: User;
-
   @Column({
     type: DataType.STRING,
     allowNull: false,
@@ -49,6 +38,18 @@ export class Dog extends Model {
     allowNull: true,
   })
   breed!: string;
+
+  @Column({
+    type: DataType.STRING,
+    allowNull: true,
+  })
+  owner_name!: string;
+
+  @Column({
+    type: DataType.STRING,
+    allowNull: true,
+  })
+  owner_phone_number!: string;
 
   @Column({
     type: DataType.TEXT,

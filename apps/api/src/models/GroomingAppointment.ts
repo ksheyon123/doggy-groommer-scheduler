@@ -41,11 +41,26 @@ export class GroomingAppointment extends Model {
   @Column({
     type: DataType.INTEGER,
     allowNull: false,
+    field: "created_by_user_id",
   })
   created_by_user_id!: number;
 
-  @BelongsTo(() => User)
+  @BelongsTo(() => User, {
+    foreignKey: "created_by_user_id",
+    as: "createdByUser",
+  })
   createdByUser!: User;
+
+  @ForeignKey(() => User)
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: true,
+    field: "assigned_user_id",
+  })
+  assigned_user_id!: number;
+
+  @BelongsTo(() => User, { foreignKey: "assigned_user_id", as: "assignedUser" })
+  assignedUser!: User;
 
   @Column({
     type: DataType.STRING,
@@ -66,10 +81,22 @@ export class GroomingAppointment extends Model {
   amount!: number;
 
   @Column({
-    type: DataType.DATE,
+    type: DataType.DATEONLY,
     allowNull: true,
   })
-  appointment_at!: Date;
+  appointment_at!: string;
+
+  @Column({
+    type: DataType.TIME,
+    allowNull: true,
+  })
+  start_time!: string;
+
+  @Column({
+    type: DataType.TIME,
+    allowNull: true,
+  })
+  end_time!: string;
 
   @Column({
     type: DataType.STRING,

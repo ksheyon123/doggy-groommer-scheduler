@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
+import { Op } from "sequelize";
 import { Dog } from "../models/Dog";
-import { User } from "../models/User";
 import { Shop } from "../models/Shop";
 import { GroomingAppointment } from "../models/GroomingAppointment";
 
@@ -17,11 +17,6 @@ export const getAllDogs = async (req: Request, res: Response) => {
         {
           model: Shop,
           attributes: ["id", "name"],
-        },
-        {
-          model: User,
-          as: "assignedUser",
-          attributes: ["id", "name", "email"],
         },
       ],
       order: [["created_at", "DESC"]],
@@ -50,11 +45,6 @@ export const getDogById = async (req: Request, res: Response) => {
         {
           model: Shop,
           attributes: ["id", "name"],
-        },
-        {
-          model: User,
-          as: "assignedUser",
-          attributes: ["id", "name", "email"],
         },
       ],
     });
@@ -89,11 +79,6 @@ export const getDogWithAppointments = async (req: Request, res: Response) => {
         {
           model: Shop,
           attributes: ["id", "name"],
-        },
-        {
-          model: User,
-          as: "assignedUser",
-          attributes: ["id", "name", "email"],
         },
       ],
     });
@@ -139,11 +124,6 @@ export const getDogsByShopId = async (req: Request, res: Response) => {
           model: Shop,
           attributes: ["id", "name"],
         },
-        {
-          model: User,
-          as: "assignedUser",
-          attributes: ["id", "name", "email"],
-        },
       ],
       order: [["created_at", "DESC"]],
     });
@@ -161,25 +141,35 @@ export const getDogsByShopId = async (req: Request, res: Response) => {
   }
 };
 
-// 담당자별 강아지 목록 조회
-export const getDogsByAssignedUserId = async (req: Request, res: Response) => {
+// 강아지 이름으로 검색
+export const searchDogsByName = async (req: Request, res: Response) => {
   try {
-    const { userId } = req.params;
+    const { name, shopId } = req.query;
+
+    if (!name || typeof name !== "string") {
+      return res.status(400).json({
+        success: false,
+        message: "검색할 이름(name)을 입력해주세요.",
+      });
+    }
+
+    if (!shopId) {
+      return res.status(400).json({
+        success: false,
+        message: "shopId는 필수입니다.",
+      });
+    }
 
     const dogs = await Dog.findAll({
-      where: { assigned_user_id: userId },
-      include: [
-        {
-          model: Shop,
-          attributes: ["id", "name"],
+      where: {
+        shop_id: shopId,
+        name: {
+          [Op.like]: `%${name}%`,
         },
-        {
-          model: User,
-          as: "assignedUser",
-          attributes: ["id", "name", "email"],
-        },
-      ],
-      order: [["created_at", "DESC"]],
+      },
+      attributes: ["id", "name", "owner_name", "breed"],
+      order: [["name", "ASC"]],
+      limit: 10,
     });
 
     res.status(200).json({
@@ -189,7 +179,7 @@ export const getDogsByAssignedUserId = async (req: Request, res: Response) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: "강아지 목록 조회 중 오류가 발생했습니다.",
+      message: "강아지 검색 중 오류가 발생했습니다.",
       error: error instanceof Error ? error.message : "알 수 없는 오류",
     });
   }
@@ -198,7 +188,8 @@ export const getDogsByAssignedUserId = async (req: Request, res: Response) => {
 // 새 강아지 등록
 export const createDog = async (req: Request, res: Response) => {
   try {
-    const { shop_id, assigned_user_id, name, breed, note } = req.body;
+    const { shop_id, name, breed, owner_name, owner_phone_number, note } =
+      req.body;
 
     // 필수 필드 검증
     if (!shop_id || !name) {
@@ -217,22 +208,12 @@ export const createDog = async (req: Request, res: Response) => {
       });
     }
 
-    // 담당자 존재 확인 (선택적)
-    if (assigned_user_id) {
-      const user = await User.findByPk(assigned_user_id);
-      if (!user) {
-        return res.status(404).json({
-          success: false,
-          message: "담당자를 찾을 수 없습니다.",
-        });
-      }
-    }
-
     const newDog = await Dog.create({
       shop_id,
-      assigned_user_id,
       name,
       breed,
+      owner_name,
+      owner_phone_number,
       note,
     });
 
@@ -241,11 +222,6 @@ export const createDog = async (req: Request, res: Response) => {
         {
           model: Shop,
           attributes: ["id", "name"],
-        },
-        {
-          model: User,
-          as: "assignedUser",
-          attributes: ["id", "name", "email"],
         },
       ],
     });
@@ -268,7 +244,7 @@ export const createDog = async (req: Request, res: Response) => {
 export const updateDog = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { assigned_user_id, name, breed, note } = req.body;
+    const { name, breed, owner_name, owner_phone_number, note } = req.body;
 
     const dog = await Dog.findByPk(id);
 
@@ -279,21 +255,12 @@ export const updateDog = async (req: Request, res: Response) => {
       });
     }
 
-    // 담당자 존재 확인 (변경 시)
-    if (assigned_user_id !== undefined && assigned_user_id !== null) {
-      const user = await User.findByPk(assigned_user_id);
-      if (!user) {
-        return res.status(404).json({
-          success: false,
-          message: "담당자를 찾을 수 없습니다.",
-        });
-      }
-    }
-
     // 업데이트할 필드만 설정
-    if (assigned_user_id !== undefined) dog.assigned_user_id = assigned_user_id;
     if (name !== undefined) dog.name = name;
     if (breed !== undefined) dog.breed = breed;
+    if (owner_name !== undefined) dog.owner_name = owner_name;
+    if (owner_phone_number !== undefined)
+      dog.owner_phone_number = owner_phone_number;
     if (note !== undefined) dog.note = note;
 
     await dog.save();
@@ -303,11 +270,6 @@ export const updateDog = async (req: Request, res: Response) => {
         {
           model: Shop,
           attributes: ["id", "name"],
-        },
-        {
-          model: User,
-          as: "assignedUser",
-          attributes: ["id", "name", "email"],
         },
       ],
     });

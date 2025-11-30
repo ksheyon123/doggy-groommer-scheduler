@@ -10,3 +10,5 @@ export * from "./components/daily-view";
 export * from "./components/weekly-view";
 export * from "./components/modal";
 export * from "./components/login-modal";
+export * from "./components/search-dropdown";
+export * from "./components/appointment-form-modal";

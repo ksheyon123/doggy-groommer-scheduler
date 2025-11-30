@@ -4,7 +4,7 @@ import {
   getDogById,
   getDogWithAppointments,
   getDogsByShopId,
-  getDogsByAssignedUserId,
+  searchDogsByName,
   createDog,
   updateDog,
   deleteDog,
@@ -15,6 +15,9 @@ const router = Router();
 // 모든 강아지 조회 (쿼리로 shopId 필터 가능)
 router.get("/", getAllDogs);
 
+// 강아지 이름으로 검색
+router.get("/search", searchDogsByName);
+
 // 특정 강아지 조회
 router.get("/:id", getDogById);
 
@@ -23,9 +26,6 @@ router.get("/:id/appointments", getDogWithAppointments);
 
 // 샵별 강아지 목록 조회
 router.get("/shop/:shopId", getDogsByShopId);
-
-// 담당자별 강아지 목록 조회
-router.get("/assigned-user/:userId", getDogsByAssignedUserId);
 
 // 새 강아지 등록
 router.post("/", createDog);
