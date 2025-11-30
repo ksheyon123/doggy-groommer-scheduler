@@ -13,6 +13,9 @@ import {
   type GroomingTypeItem,
   type GroomerItem,
   type DogRegisterData,
+  type Groomer as DailyGroomer,
+  type Appointment as DailyAppointment,
+  type WeeklyAppointment,
 } from "@repo/ui";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -29,12 +32,59 @@ interface Shop {
   phone?: string;
 }
 
-// Groomer 타입
-interface Groomer {
+// API에서 받아온 예약 데이터 타입
+interface ApiAppointment {
+  id: number;
+  shop_id: number;
+  dog_id: number;
+  created_by_user_id: number;
+  assigned_user_id?: number; // 담당 미용사 ID
+  grooming_type: string;
+  memo?: string;
+  amount?: number;
+  appointment_at: string;
+  start_time: string;
+  end_time: string;
+  status: string;
+  Dog?: {
+    id: number;
+    name: string;
+    breed: string;
+  };
+  createdByUser?: {
+    id: number;
+    name: string;
+    email: string;
+  };
+  assignedUser?: {
+    id: number;
+    name: string;
+    email: string;
+  };
+  Shop?: {
+    id: number;
+    name: string;
+  };
+}
+
+// 선택된 미용사 타입
+interface SelectedGroomer {
   id: number;
   name: string;
   color: string;
 }
+
+// 미용사 색상 배열
+const GROOMER_COLORS = [
+  "bg-pink-100 border-pink-300",
+  "bg-blue-100 border-blue-300",
+  "bg-green-100 border-green-300",
+  "bg-purple-100 border-purple-300",
+  "bg-yellow-100 border-yellow-300",
+  "bg-orange-100 border-orange-300",
+  "bg-cyan-100 border-cyan-300",
+  "bg-rose-100 border-rose-300",
+];
 
 export default function Home() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -49,9 +99,11 @@ export default function Home() {
   const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false);
   const [appointmentInitialDate, setAppointmentInitialDate] = useState("");
   const [appointmentInitialTime, setAppointmentInitialTime] = useState("");
-  const [selectedGroomer, setSelectedGroomer] = useState<Groomer | null>(null);
+  const [selectedGroomer, setSelectedGroomer] =
+    useState<SelectedGroomer | null>(null);
   const [groomingTypes, setGroomingTypes] = useState<GroomingTypeItem[]>([]);
   const [groomers, setGroomers] = useState<GroomerItem[]>([]);
+  const [appointments, setAppointments] = useState<ApiAppointment[]>([]);
 
   const router = useRouter();
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -167,6 +219,36 @@ export default function Home() {
     fetchGroomers();
   }, [selectedShop]);
 
+  // 예약 목록 가져오기
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      if (!selectedShop) return;
+
+      const accessToken = getAccessToken();
+      if (!accessToken) return;
+
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/api/appointments/shop/${selectedShop.id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          }
+        );
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          setAppointments(data.data);
+        }
+      } catch (error) {
+        console.error("예약 목록 조회 실패:", error);
+      }
+    };
+
+    fetchAppointments();
+  }, [selectedShop]);
+
   // 사용자 메뉴 및 매장 드롭다운 외부 클릭 감지
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -207,21 +289,87 @@ export default function Home() {
 
   // 시간 슬롯 클릭 시 (일일 뷰에서)
   const handleTimeSlotClick = (groomerId: number, time: string) => {
-    // 더미 groomer 데이터에서 찾기 (실제로는 API에서 가져와야 함)
-    const groomers: Groomer[] = [
-      { id: 1, name: "김미용", color: "bg-pink-100 border-pink-300" },
-      { id: 2, name: "이가위", color: "bg-blue-100 border-blue-300" },
-      { id: 3, name: "박샴푸", color: "bg-green-100 border-green-300" },
-      { id: 4, name: "최드라이", color: "bg-purple-100 border-purple-300" },
-    ];
-
-    const groomer = groomers.find((g) => g.id === groomerId);
+    // groomerId는 user_id이므로 user_id로 찾기
+    const groomer = groomers.find((g) => g.user_id === groomerId);
 
     setAppointmentInitialDate(formatDateForInput(selectedDate));
     setAppointmentInitialTime(time);
-    setSelectedGroomer(groomer || null);
+    setSelectedGroomer(
+      groomer
+        ? {
+            id: groomer.user_id,
+            name: groomer.name,
+            color:
+              GROOMER_COLORS[groomers.indexOf(groomer) % GROOMER_COLORS.length],
+          }
+        : null
+    );
     setIsAppointmentModalOpen(true);
   };
+
+  // DailyView용 groomers 변환 (user_id를 id로 사용하여 appointments와 매칭)
+  const dailyGroomers: DailyGroomer[] = groomers.map((g, index) => ({
+    id: g.user_id, // user_id를 사용하여 appointments의 created_by_user_id와 매칭
+    name: g.name,
+    color: GROOMER_COLORS[index % GROOMER_COLORS.length],
+  }));
+
+  // 시간 형식 변환 (HH:MM:SS -> HH:MM)
+  const formatTime = (time: string | null | undefined): string => {
+    if (!time) return "09:00";
+    // "HH:MM:SS" 형식에서 "HH:MM"만 추출
+    return time.substring(0, 5);
+  };
+
+  // 날짜 문자열 비교 (YYYY-MM-DD 형식)
+  const isSameDate = (dateStr: string, targetDate: Date): boolean => {
+    const targetDateStr = formatDateForInput(targetDate);
+    return dateStr === targetDateStr;
+  };
+
+  // DailyView용 appointments 변환
+  const dailyAppointments: DailyAppointment[] = appointments
+    .filter((apt) => isSameDate(apt.appointment_at, selectedDate))
+    .map((apt) => {
+      // assigned_user_id가 있으면 담당 미용사, 없으면 created_by_user_id 사용
+      const assignedUserId = apt.assigned_user_id || apt.created_by_user_id;
+      return {
+        id: apt.id,
+        groomerId: assignedUserId,
+        startTime: formatTime(apt.start_time),
+        endTime: formatTime(apt.end_time),
+        dogName: apt.Dog?.name || "이름 없음",
+        serviceName: apt.grooming_type || "미용",
+      };
+    });
+
+  // WeeklyView용 appointments 변환
+  const weeklyAppointments: WeeklyAppointment[] = appointments.map((apt) => {
+    // assigned_user_id가 있으면 담당 미용사, 없으면 created_by_user_id 사용
+    const assignedUserId = apt.assigned_user_id || apt.created_by_user_id;
+    const groomerIndex = groomers.findIndex(
+      (g) => g.user_id === assignedUserId
+    );
+    const groomer = groomers[groomerIndex];
+    // DATEONLY 형식 파싱 (YYYY-MM-DD)
+    const [year, month, day] = apt.appointment_at.split("-").map(Number);
+    return {
+      id: apt.id,
+      groomerId: assignedUserId,
+      groomerName: groomer?.name || "미정",
+      date: new Date(year, month - 1, day), // 로컬 시간으로 생성
+      startTime: formatTime(apt.start_time),
+      endTime: formatTime(apt.end_time),
+      dogName: apt.Dog?.name || "이름 없음",
+      serviceName: apt.grooming_type || "미용",
+      color:
+        groomerIndex >= 0
+          ? GROOMER_COLORS[groomerIndex % GROOMER_COLORS.length]
+              .replace("100", "200")
+              .replace("300", "400")
+          : "bg-gray-200 border-gray-400",
+    };
+  });
 
   // 강아지 검색 API
   const handleSearchDog = async (query: string): Promise<DogSearchItem[]> => {
@@ -621,6 +769,8 @@ export default function Home() {
         {viewMode === "daily" && (
           <DailyView
             date={selectedDate}
+            groomers={dailyGroomers}
+            appointments={dailyAppointments}
             onBackToWeekly={() => setViewMode("weekly")}
             onTimeSlotClick={handleTimeSlotClick}
           />
@@ -629,6 +779,7 @@ export default function Home() {
           <WeeklyView
             onDateSelect={handleDateSelect}
             selectedDate={selectedDate}
+            appointments={weeklyAppointments}
             onDayClick={(date) => {
               setSelectedDate(date);
               setViewMode("daily");

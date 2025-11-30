@@ -87,6 +87,20 @@ export const getAppointmentById = async (req: Request, res: Response) => {
   }
 };
 
+// start_time에서 2시간을 더한 시간 계산
+const calculateEndTime = (startTime: string): string => {
+  const [hours, minutes] = startTime.split(":").map(Number);
+  let endHours = hours + 2;
+  const endMinutes = minutes;
+
+  // 24시간 형식 유지
+  if (endHours >= 24) {
+    endHours = endHours - 24;
+  }
+
+  return `${endHours.toString().padStart(2, "0")}:${endMinutes.toString().padStart(2, "0")}`;
+};
+
 // 새 예약 생성
 export const createAppointment = async (req: Request, res: Response) => {
   try {
@@ -110,6 +124,10 @@ export const createAppointment = async (req: Request, res: Response) => {
         message: "shop_id, dog_id, created_by_user_id는 필수입니다.",
       });
     }
+
+    // end_time이 없으면 start_time + 2시간으로 설정
+    const calculatedEndTime =
+      end_time || (start_time ? calculateEndTime(start_time) : undefined);
 
     // 샵 존재 확인
     const shop = await Shop.findByPk(shop_id);
@@ -155,7 +173,7 @@ export const createAppointment = async (req: Request, res: Response) => {
       amount,
       appointment_at,
       start_time,
-      end_time,
+      end_time: calculatedEndTime,
       status: status || "scheduled",
     });
 

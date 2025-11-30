@@ -27,58 +27,6 @@ export interface DailyViewProps {
   onBackToWeekly?: () => void;
 }
 
-// 더미 미용선생님 데이터
-const defaultGroomers: Groomer[] = [
-  { id: 1, name: "김미용", color: "bg-pink-100 border-pink-300" },
-  { id: 2, name: "이가위", color: "bg-blue-100 border-blue-300" },
-  { id: 3, name: "박샴푸", color: "bg-green-100 border-green-300" },
-  { id: 4, name: "최드라이", color: "bg-purple-100 border-purple-300" },
-];
-
-// 더미 예약 데이터
-const defaultAppointments: Appointment[] = [
-  {
-    id: 1,
-    groomerId: 1,
-    startTime: "09:00",
-    endTime: "10:00",
-    dogName: "몽이",
-    serviceName: "전체 미용",
-  },
-  {
-    id: 2,
-    groomerId: 1,
-    startTime: "11:00",
-    endTime: "12:00",
-    dogName: "초코",
-    serviceName: "목욕",
-  },
-  {
-    id: 3,
-    groomerId: 2,
-    startTime: "10:00",
-    endTime: "11:30",
-    dogName: "뽀삐",
-    serviceName: "부분 미용",
-  },
-  {
-    id: 4,
-    groomerId: 3,
-    startTime: "14:00",
-    endTime: "15:00",
-    dogName: "코코",
-    serviceName: "발톱 정리",
-  },
-  {
-    id: 5,
-    groomerId: 4,
-    startTime: "09:30",
-    endTime: "10:30",
-    dogName: "백구",
-    serviceName: "전체 미용",
-  },
-];
-
 // 시간 슬롯 생성 (09:00 ~ 18:00)
 const timeSlots = Array.from({ length: 19 }, (_, i) => {
   const hour = Math.floor(i / 2) + 9;
@@ -88,11 +36,15 @@ const timeSlots = Array.from({ length: 19 }, (_, i) => {
 
 export function DailyView({
   date,
-  groomers = defaultGroomers,
-  appointments = defaultAppointments,
+  groomers = [],
+  appointments = [],
   onTimeSlotClick,
   onBackToWeekly,
 }: DailyViewProps) {
+  // 그리드 열 수 계산 (최소 1개)
+  const gridColCount = Math.max(groomers.length, 1);
+  const gridColsClass = `grid-cols-[80px_repeat(${gridColCount},1fr)]`;
+
   // 시간 문자열을 분으로 변환
   const timeToMinutes = (time: string) => {
     const [hour, minute] = time.split(":").map(Number);
@@ -190,7 +142,12 @@ export function DailyView({
       <div className="overflow-x-auto">
         <div className="min-w-[800px]">
           {/* 미용선생님 헤더 */}
-          <div className="grid grid-cols-[80px_repeat(4,1fr)] border-b border-zinc-200 dark:border-zinc-800">
+          <div
+            className={`grid border-b border-zinc-200 dark:border-zinc-800`}
+            style={{
+              gridTemplateColumns: `80px repeat(${gridColCount}, 1fr)`,
+            }}
+          >
             <div className="p-3 bg-zinc-50 dark:bg-zinc-800 text-center text-sm font-medium text-zinc-500 dark:text-zinc-400">
               시간
             </div>
@@ -214,7 +171,10 @@ export function DailyView({
             {timeSlots.map((time) => (
               <div
                 key={time}
-                className="grid grid-cols-[80px_repeat(4,1fr)] min-h-[48px]"
+                className="grid min-h-[48px]"
+                style={{
+                  gridTemplateColumns: `80px repeat(${gridColCount}, 1fr)`,
+                }}
               >
                 {/* 시간 라벨 */}
                 <div className="p-2 text-center text-xs font-medium text-zinc-500 dark:text-zinc-400 bg-zinc-50/50 dark:bg-zinc-800/50 flex items-center justify-center">
