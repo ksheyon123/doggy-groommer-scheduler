@@ -92,10 +92,6 @@ export default function EmployeeManagementPage() {
           (shop: Shop) => shop.role === "owner"
         );
         setOwnerShops(ownerOnlyShops);
-        // 첫 번째 매장을 기본 선택
-        if (ownerOnlyShops.length > 0 && !selectedShopId) {
-          setSelectedShopId(ownerOnlyShops[0].id);
-        }
       }
     } catch (error) {
       console.error("매장 목록 조회 실패:", error);
