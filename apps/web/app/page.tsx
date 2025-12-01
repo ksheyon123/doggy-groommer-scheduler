@@ -4,6 +4,8 @@ import {
   Calendar,
   DailyView,
   WeeklyView,
+  MonthlyView,
+  YearlyView,
   ViewModeDropdown,
   LoginModal,
   AppointmentFormModal,
@@ -137,6 +139,32 @@ export default function Home() {
     return `${year}-${month}-${day}`;
   };
 
+  // 뷰 모드에 따른 조회 기간 계산
+  const getDateRange = (
+    date: Date,
+    mode: ViewMode
+  ): { startDate: string; endDate: string } => {
+    if (mode === "daily") {
+      // Daily: 선택된 날짜 하루만
+      const dateStr = formatDateForInput(date);
+      return { startDate: dateStr, endDate: dateStr };
+    } else {
+      // Weekly: 선택된 날짜가 포함된 주 (일요일 ~ 토요일)
+      const d = new Date(date);
+      const day = d.getDay();
+      // 일요일로 이동
+      const weekStart = new Date(d);
+      weekStart.setDate(d.getDate() - day);
+      // 토요일로 이동
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6);
+      return {
+        startDate: formatDateForInput(weekStart),
+        endDate: formatDateForInput(weekEnd),
+      };
+    }
+  };
+
   // 매장 목록 가져오기 (전역 상태 사용)
   useEffect(() => {
     if (isAuthenticated) {
@@ -212,17 +240,25 @@ export default function Home() {
     fetchGroomers();
   }, [selectedShop]);
 
-  // 예약 목록 가져오기
+  // 예약 목록 가져오기 (기간 기반)
   useEffect(() => {
     const fetchAppointments = async () => {
+      // monthly, yearly 뷰에서는 예약 데이터를 조회하지 않음
+      if (viewMode === "monthly" || viewMode === "yearly") {
+        return;
+      }
+
       if (!selectedShop) return;
 
       const accessToken = getAccessToken();
       if (!accessToken) return;
 
+      // 현재 뷰 모드와 선택된 날짜에 따라 조회 기간 계산
+      const { startDate, endDate } = getDateRange(selectedDate, viewMode);
+
       try {
         const response = await fetch(
-          `${API_BASE_URL}/api/appointments/shop/${selectedShop.id}`,
+          `${API_BASE_URL}/api/appointments/shop/${selectedShop.id}?startDate=${startDate}&endDate=${endDate}`,
           {
             headers: {
               Authorization: `Bearer ${accessToken}`,
@@ -240,7 +276,7 @@ export default function Home() {
     };
 
     fetchAppointments();
-  }, [selectedShop]);
+  }, [selectedShop, selectedDate, viewMode]);
 
   // 사용자 메뉴 및 매장 드롭다운 외부 클릭 감지
   useEffect(() => {
@@ -453,16 +489,19 @@ export default function Home() {
     };
   };
 
-  // 예약 목록 새로고침
+  // 예약 목록 새로고침 (기간 기반)
   const refreshAppointments = async () => {
     if (!selectedShop) return;
 
     const accessToken = getAccessToken();
     if (!accessToken) return;
 
+    // 현재 뷰 모드와 선택된 날짜에 따라 조회 기간 계산
+    const { startDate, endDate } = getDateRange(selectedDate, viewMode);
+
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/appointments/shop/${selectedShop.id}`,
+        `${API_BASE_URL}/api/appointments/shop/${selectedShop.id}?startDate=${startDate}&endDate=${endDate}`,
         {
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -956,6 +995,9 @@ export default function Home() {
             onBackToWeekly={() => setViewMode("weekly")}
             onTimeSlotClick={handleTimeSlotClick}
             onAppointmentClick={handleDailyAppointmentClick}
+            onDateChange={(date) => {
+              setSelectedDate(date);
+            }}
           />
         )}
         {viewMode === "weekly" && (
@@ -967,13 +1009,34 @@ export default function Home() {
               setSelectedDate(date);
               setViewMode("daily");
             }}
+            onWeekChange={(date) => {
+              setSelectedDate(date);
+            }}
             onAppointmentClick={handleWeeklyAppointmentClick}
           />
         )}
-        {(viewMode === "monthly" || viewMode === "yearly") && (
-          <Calendar
-            onDateSelect={handleDateSelect}
+        {viewMode === "monthly" && (
+          <MonthlyView
             selectedDate={selectedDate}
+            onMonthSelect={(year, month) => {
+              // 해당 월의 첫 번째 날로 날짜 설정
+              const firstDayOfMonth = new Date(year, month, 1);
+              setSelectedDate(firstDayOfMonth);
+              // 주간 뷰로 전환
+              setViewMode("weekly");
+            }}
+          />
+        )}
+        {viewMode === "yearly" && (
+          <YearlyView
+            selectedDate={selectedDate}
+            onYearSelect={(year) => {
+              // 해당 연도의 1월 1일로 날짜 설정
+              const firstDayOfYear = new Date(year, 0, 1);
+              setSelectedDate(firstDayOfYear);
+              // 월별 뷰로 전환
+              setViewMode("monthly");
+            }}
           />
         )}
       </main>
