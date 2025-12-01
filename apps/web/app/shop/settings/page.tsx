@@ -2,16 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { getAccessToken } from "@/lib/auth";
+import { useShop } from "@/lib/shop";
 import { useRouter } from "next/navigation";
-
-// 매장 타입
-interface Shop {
-  id: number;
-  name: string;
-  address?: string;
-  phone?: string;
-  role?: string;
-}
 
 // 미용 타입
 interface GroomingType {
@@ -26,10 +18,16 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 export default function ShopSettingsPage() {
   const router = useRouter();
 
-  // 매장 관련 상태
-  const [shops, setShops] = useState<Shop[]>([]);
+  // 전역 샵 상태 사용
+  const {
+    shops,
+    selectedShop: globalSelectedShop,
+    isLoadingShops,
+    refreshShops,
+  } = useShop();
+
+  // 로컬 선택 상태 (전역 상태를 기본값으로 사용)
   const [selectedShopId, setSelectedShopId] = useState<number | null>(null);
-  const [isLoadingShops, setIsLoadingShops] = useState(false);
 
   // 미용 타입 관련 상태
   const [groomingTypes, setGroomingTypes] = useState<GroomingType[]>([]);
@@ -68,35 +66,18 @@ export default function ShopSettingsPage() {
     setAlertModal({ isOpen: false, title: "", message: "" });
   };
 
-  // 매장 목록 조회
-  const fetchShops = async () => {
-    const accessToken = getAccessToken();
-    if (!accessToken) {
-      showAlert("알림", "로그인이 필요합니다.");
-      return;
+  // 전역 상태가 변경되면 로컬 상태에 반영 (초기화 시)
+  useEffect(() => {
+    if (globalSelectedShop && selectedShopId === null) {
+      setSelectedShopId(globalSelectedShop.id);
     }
+  }, [globalSelectedShop, selectedShopId]);
 
-    setIsLoadingShops(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/shops`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
-      const data = await response.json();
-      if (response.ok && data.success) {
-        setShops(data.data);
-        // 첫 번째 매장을 기본 선택
-        if (data.data.length > 0 && !selectedShopId) {
-          setSelectedShopId(data.data[0].id);
-        }
-      }
-    } catch (error) {
-      console.error("매장 목록 조회 실패:", error);
-    } finally {
-      setIsLoadingShops(false);
-    }
-  };
+  // 컴포넌트 마운트 시 매장 목록 조회
+  useEffect(() => {
+    refreshShops();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // 미용 타입 목록 조회
   const fetchGroomingTypes = async (shopId: number) => {
@@ -203,11 +184,6 @@ export default function ShopSettingsPage() {
       setDeleteModal({ isOpen: false, typeId: null, typeName: "" });
     }
   };
-
-  // 컴포넌트 마운트 시 매장 목록 조회
-  useEffect(() => {
-    fetchShops();
-  }, []);
 
   // 선택된 매장이 변경되면 미용 타입 목록 조회
   useEffect(() => {
@@ -499,11 +475,6 @@ export default function ShopSettingsPage() {
             {selectedShop && (
               <p className="text-sm text-zinc-500 dark:text-zinc-400">
                 선택된 매장: <strong>{selectedShop.name}</strong>
-                {selectedShop.role && (
-                  <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-                    {selectedShop.role === "owner" ? "소유자" : "직원"}
-                  </span>
-                )}
               </p>
             )}
           </div>
