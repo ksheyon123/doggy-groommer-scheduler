@@ -79,18 +79,30 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          envs: DB_USER,DB_PASSWORD,DB_NAME,DB_ROOT_PASSWORD,JWT_ACCESS_SECRET,JWT_REFRESH_SECRET,API_URL
           script: |
             # GitHub Container Registry 로그인
-            echo ${{ secrets.GH_PAT }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            echo ${{ secrets.GH_PAT }} | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
             # 배포 디렉토리로 이동
             cd /home/${{ secrets.EC2_USER }}/app
 
+            # .env 파일 생성 (환경 변수 설정)
+            cat > .env << EOF
+            DB_USER=${{ secrets.DB_USER }}
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            DB_NAME=${{ secrets.DB_NAME }}
+            DB_ROOT_PASSWORD=${{ secrets.DB_ROOT_PASSWORD }}
+            JWT_ACCESS_SECRET=${{ secrets.JWT_ACCESS_SECRET }}
+            JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}
+            API_URL=${{ secrets.API_URL }}
+            EOF
+
             # 최신 이미지 pull
-            docker compose -f docker-compose.prod.yml pull
+            sudo docker compose -f docker-compose.prod.yml pull
 
             # 컨테이너 재시작
-            docker compose -f docker-compose.prod.yml up -d
+            sudo docker compose -f docker-compose.prod.yml up -d
 
             # 사용하지 않는 이미지 정리
-            docker image prune -f
+            sudo docker image prune -f
