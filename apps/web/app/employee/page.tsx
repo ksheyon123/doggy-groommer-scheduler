@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth, getAccessToken } from "@/lib/auth";
+import { useShop } from "@/lib/shop";
 import { useRouter } from "next/navigation";
 
 // 타입 정의
@@ -35,12 +36,16 @@ export default function EmployeeManagementPage() {
   const router = useRouter();
   const { user, isLoading } = useAuth();
 
+  // 전역 샵 상태 사용
+  const { selectedShop: globalSelectedShop } = useShop();
+
   // 상태 관리
   const [ownerShops, setOwnerShops] = useState<Shop[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [selectedShopId, setSelectedShopId] = useState<number | null>(null);
   const [isLoadingShops, setIsLoadingShops] = useState(false);
   const [isLoadingEmployees, setIsLoadingEmployees] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // 직원 추가 모달 상태
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -131,6 +136,20 @@ export default function EmployeeManagementPage() {
       fetchOwnerShops();
     }
   }, [user?.id]);
+
+  // 전역 상태가 변경되면 로컬 상태에 반영 (초기화 시)
+  useEffect(() => {
+    if (globalSelectedShop && !isInitialized && ownerShops.length > 0) {
+      // 전역 선택된 매장이 owner 매장 목록에 있는지 확인
+      const matchingShop = ownerShops.find(
+        (shop) => shop.id === globalSelectedShop.id
+      );
+      if (matchingShop) {
+        setSelectedShopId(matchingShop.id);
+      }
+      setIsInitialized(true);
+    }
+  }, [globalSelectedShop, ownerShops, isInitialized]);
 
   // 선택된 매장 변경 시 직원 목록 조회
   useEffect(() => {
