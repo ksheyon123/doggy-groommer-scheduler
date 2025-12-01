@@ -28,12 +28,8 @@ export interface DailyViewProps {
   onBackToWeekly?: () => void;
 }
 
-// 시간 슬롯 생성 (09:00 ~ 18:00, 15분 단위)
-const timeSlots = Array.from({ length: 37 }, (_, i) => {
-  const hour = Math.floor(i / 4) + 9;
-  const minute = (i % 4) * 15;
-  return `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
-});
+// 시간 슬롯 생성 (06:00 ~ 22:00, 1시간 단위)
+const hours = Array.from({ length: 17 }, (_, i) => i + 6); // 06:00 ~ 22:00
 
 export function DailyView({
   date,
@@ -45,7 +41,6 @@ export function DailyView({
 }: DailyViewProps) {
   // 그리드 열 수 계산 (최소 1개)
   const gridColCount = Math.max(groomers.length, 1);
-  const gridColsClass = `grid-cols-[80px_repeat(${gridColCount},1fr)]`;
 
   // 시간 문자열을 분으로 변환
   const timeToMinutes = (time: string) => {
@@ -53,38 +48,42 @@ export function DailyView({
     return hour * 60 + minute;
   };
 
-  // 예약이 특정 시간 슬롯에 해당하는지 확인 (슬롯 범위와 예약 범위가 겹치는지)
-  const getAppointmentForSlot = (groomerId: number, time: string) => {
-    const slotStartMinutes = timeToMinutes(time);
-    const slotEndMinutes = slotStartMinutes + 15;
-    return appointments.find((apt) => {
+  // 특정 미용사와 시간에 해당하는 예약들 찾기
+  const getAppointmentsForSlot = (groomerId: number, hour: number) => {
+    const slotStart = hour * 60;
+    const slotEnd = (hour + 1) * 60;
+
+    return appointments.filter((apt) => {
       if (apt.groomerId !== groomerId) return false;
-      const startMinutes = timeToMinutes(apt.startTime);
-      const endMinutes = timeToMinutes(apt.endTime);
-      // 슬롯 범위와 예약 범위가 겹치는지 확인
-      return startMinutes < slotEndMinutes && endMinutes > slotStartMinutes;
+      const aptStart = timeToMinutes(apt.startTime);
+      const aptEnd = timeToMinutes(apt.endTime);
+      return aptStart < slotEnd && aptEnd > slotStart;
     });
   };
 
-  // 예약 시작 슬롯인지 확인 (예약 시작 시간을 포함하는 첫 번째 슬롯)
-  const isAppointmentStart = (groomerId: number, time: string) => {
-    const slotMinutes = timeToMinutes(time);
-    const nextSlotMinutes = slotMinutes + 15;
-
-    return appointments.some((apt) => {
-      if (apt.groomerId !== groomerId) return false;
-      const startMinutes = timeToMinutes(apt.startTime);
-      // 예약 시작 시간이 현재 슬롯 범위 내에 있으면 시작으로 간주
-      return startMinutes >= slotMinutes && startMinutes < nextSlotMinutes;
-    });
+  // 예약이 특정 시간에 시작하는지 확인
+  const appointmentStartsAtHour = (apt: Appointment, hour: number) => {
+    const aptStartMinutes = timeToMinutes(apt.startTime);
+    return aptStartMinutes >= hour * 60 && aptStartMinutes < (hour + 1) * 60;
   };
 
-  // 예약의 슬롯 수 계산 (15분 단위)
-  const getAppointmentSlotCount = (appointment: Appointment) => {
-    const startMinutes = timeToMinutes(appointment.startTime);
-    const endMinutes = timeToMinutes(appointment.endTime);
-    return Math.ceil((endMinutes - startMinutes) / 15);
+  // 예약 높이 계산 (시간 기준)
+  const getAppointmentHeight = (apt: Appointment) => {
+    const startMinutes = timeToMinutes(apt.startTime);
+    const endMinutes = timeToMinutes(apt.endTime);
+    const durationHours = (endMinutes - startMinutes) / 60;
+    return durationHours * 48; // 48px per hour
   };
+
+  // 예약 상단 오프셋 계산
+  const getAppointmentTop = (apt: Appointment, hour: number) => {
+    const startMinutes = timeToMinutes(apt.startTime);
+    const hourStartMinutes = hour * 60;
+    const offsetMinutes = startMinutes - hourStartMinutes;
+    return (offsetMinutes / 60) * 48;
+  };
+
+  const formatHour = (hour: number) => `${hour.toString().padStart(2, "0")}:00`;
 
   const formatDate = (date: Date) => {
     const year = date.getFullYear();
@@ -149,22 +148,22 @@ export function DailyView({
       </div>
 
       {/* 미용선생님 + 시간대 그리드 */}
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto overflow-y-auto max-h-[600px]">
         <div className="min-w-[800px]">
           {/* 미용선생님 헤더 */}
           <div
-            className={`grid border-b border-zinc-200 dark:border-zinc-800`}
+            className="grid border-b border-zinc-200 dark:border-zinc-800 sticky top-0 bg-white dark:bg-zinc-900 z-20"
             style={{
               gridTemplateColumns: `80px repeat(${gridColCount}, 1fr)`,
             }}
           >
-            <div className="p-3 bg-zinc-50 dark:bg-zinc-800 text-center text-sm font-medium text-zinc-500 dark:text-zinc-400">
+            <div className="p-3 bg-zinc-50 dark:bg-zinc-800 text-center text-sm font-medium text-zinc-500 dark:text-zinc-400 border-r border-zinc-200 dark:border-zinc-700">
               시간
             </div>
             {groomers.map((groomer) => (
               <div
                 key={groomer.id}
-                className="p-3 bg-zinc-50 dark:bg-zinc-800 text-center border-l border-zinc-200 dark:border-zinc-700"
+                className="p-3 bg-zinc-50 dark:bg-zinc-800 text-center border-r border-zinc-200 dark:border-zinc-700 last:border-r-0"
               >
                 <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                   {groomer.name}
@@ -177,55 +176,84 @@ export function DailyView({
           </div>
 
           {/* 시간 슬롯 */}
-          <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
-            {timeSlots.map((time) => (
+          <div className="relative">
+            {hours.map((hour) => (
               <div
-                key={time}
-                className="grid min-h-[32px]"
+                key={hour}
+                className="grid border-b border-zinc-200 dark:border-zinc-800"
                 style={{
                   gridTemplateColumns: `80px repeat(${gridColCount}, 1fr)`,
                 }}
               >
                 {/* 시간 라벨 */}
-                <div className="p-2 text-center text-xs font-medium text-zinc-500 dark:text-zinc-400 bg-zinc-50/50 dark:bg-zinc-800/50 flex items-center justify-center">
-                  {time}
+                <div className="p-2 text-right pr-3 border-r border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50 h-12">
+                  <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                    {formatHour(hour)}
+                  </span>
                 </div>
 
                 {/* 각 미용선생님의 슬롯 */}
                 {groomers.map((groomer) => {
-                  const appointment = getAppointmentForSlot(groomer.id, time);
-                  const isStart = isAppointmentStart(groomer.id, time);
+                  const slotAppointments = getAppointmentsForSlot(
+                    groomer.id,
+                    hour
+                  );
+                  const startingAppointments = slotAppointments.filter((apt) =>
+                    appointmentStartsAtHour(apt, hour)
+                  );
 
                   return (
                     <div
-                      key={`${groomer.id}-${time}`}
-                      className="border-l border-zinc-100 dark:border-zinc-800 relative"
-                      onClick={() => onTimeSlotClick?.(groomer.id, time)}
+                      key={`${groomer.id}-${hour}`}
+                      className="relative h-12 border-r border-zinc-200 dark:border-zinc-800 last:border-r-0"
+                      onClick={() =>
+                        onTimeSlotClick?.(groomer.id, formatHour(hour))
+                      }
                     >
-                      {appointment && isStart ? (
-                        <div
-                          className={`absolute inset-x-1 top-1 ${groomer.color} border rounded-md p-2 z-10 cursor-pointer hover:shadow-md transition-shadow`}
-                          style={{
-                            height: `calc(${getAppointmentSlotCount(appointment) * 100}% - 8px)`,
-                          }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onAppointmentClick?.(appointment);
-                          }}
-                        >
-                          <div className="text-xs font-semibold text-zinc-800 truncate">
-                            {appointment.dogName}
+                      {/* 예약 카드들 */}
+                      {startingAppointments.map((apt, aptIndex) => {
+                        const totalOverlapping = startingAppointments.length;
+                        const width =
+                          totalOverlapping > 1
+                            ? `${100 / totalOverlapping}%`
+                            : "100%";
+                        const left =
+                          totalOverlapping > 1
+                            ? `${(aptIndex / totalOverlapping) * 100}%`
+                            : "0";
+
+                        return (
+                          <div
+                            key={apt.id}
+                            className={`absolute ${groomer.color} border rounded-md p-1 overflow-hidden cursor-pointer hover:shadow-md transition-shadow z-10`}
+                            style={{
+                              top: getAppointmentTop(apt, hour),
+                              height: getAppointmentHeight(apt),
+                              width: `calc(${width} - 4px)`,
+                              left: `calc(${left} + 2px)`,
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onAppointmentClick?.(apt);
+                            }}
+                          >
+                            <div className="text-xs font-semibold text-zinc-800 truncate">
+                              {apt.dogName}
+                            </div>
+                            <div className="text-xs text-zinc-600 truncate">
+                              {apt.serviceName}
+                            </div>
+                            <div className="text-xs text-zinc-500">
+                              {apt.startTime} - {apt.endTime}
+                            </div>
                           </div>
-                          <div className="text-xs text-zinc-600 truncate">
-                            {appointment.serviceName}
-                          </div>
-                          <div className="text-xs text-zinc-500">
-                            {appointment.startTime} - {appointment.endTime}
-                          </div>
-                        </div>
-                      ) : !appointment ? (
+                        );
+                      })}
+
+                      {/* 빈 슬롯 호버 효과 */}
+                      {slotAppointments.length === 0 && (
                         <div className="absolute inset-0 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors" />
-                      ) : null}
+                      )}
                     </div>
                   );
                 })}

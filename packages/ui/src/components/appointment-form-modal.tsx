@@ -501,6 +501,8 @@ export function AppointmentFormModal({
                 <Input
                   type="time"
                   value={formData.start_time}
+                  min="06:00"
+                  max="22:00"
                   onChange={(e) =>
                     handleInputChange("start_time", e.target.value)
                   }
@@ -509,6 +511,7 @@ export function AppointmentFormModal({
                       "bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700",
                   }}
                 />
+                <p className="text-xs text-zinc-500 mt-1">06:00 ~ 22:00</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
@@ -517,6 +520,8 @@ export function AppointmentFormModal({
                 <Input
                   type="time"
                   value={formData.end_time}
+                  min="06:00"
+                  max="22:00"
                   onChange={(e) =>
                     handleInputChange("end_time", e.target.value)
                   }
@@ -525,6 +530,7 @@ export function AppointmentFormModal({
                       "bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700",
                   }}
                 />
+                <p className="text-xs text-zinc-500 mt-1">06:00 ~ 22:00</p>
               </div>
             </div>
 

@@ -40,7 +40,7 @@ export function WeeklyView({
   today.setHours(0, 0, 0, 0);
 
   const weekDays = ["일", "월", "화", "수", "목", "금", "토"];
-  const hours = Array.from({ length: 12 }, (_, i) => i + 9); // 09:00 ~ 20:00
+  const hours = Array.from({ length: 17 }, (_, i) => i + 6); // 06:00 ~ 22:00
 
   const getWeekStart = (date: Date) => {
     const d = new Date(date);
