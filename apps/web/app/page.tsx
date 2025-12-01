@@ -119,6 +119,7 @@ export default function Home() {
     end_time: string;
     memo: string;
     grooming_type: string;
+    amount: number | null;
   } | null>(null);
 
   const router = useRouter();
@@ -325,7 +326,6 @@ export default function Home() {
 
   // DailyView용 groomers 변환 (user_id를 id로 사용하여 appointments와 매칭)
   // "미배정" 그루머를 먼저 추가하고, 실제 직원들을 추가
-  console.log(groomers);
   const dailyGroomers: DailyGroomer[] = [
     {
       id: 0, // 미배정 ID
@@ -530,6 +530,7 @@ export default function Home() {
             assigned_user_id: formData.assigned_user_id,
             grooming_type: formData.grooming_type,
             memo: formData.memo,
+            amount: formData.amount,
             appointment_at: formData.appointment_at,
             start_time: formData.start_time,
             end_time: formData.end_time,
@@ -562,6 +563,7 @@ export default function Home() {
         assigned_user_id: formData.assigned_user_id || selectedGroomer?.id,
         grooming_type: formData.grooming_type,
         memo: formData.memo,
+        amount: formData.amount,
         appointment_at: formData.appointment_at,
         start_time: formData.start_time,
         end_time: formData.end_time,
@@ -623,13 +625,13 @@ export default function Home() {
       end_time: formatTime(apiAppointment.end_time),
       memo: apiAppointment.memo || "",
       grooming_type: apiAppointment.grooming_type || "",
+      amount: apiAppointment.amount || null,
     });
     setIsAppointmentModalOpen(true);
   };
 
   // 예약 클릭 시 수정 모달 열기 (Daily View)
   const handleDailyAppointmentClick = (appointment: DailyAppointment) => {
-    console.log(appointment);
     // 원본 API 데이터에서 해당 예약 찾기
     const apiAppointment = appointments.find(
       (apt) => apt.id === appointment.id
@@ -649,6 +651,7 @@ export default function Home() {
       end_time: formatTime(apiAppointment.end_time),
       memo: apiAppointment.memo || "",
       grooming_type: apiAppointment.grooming_type || "",
+      amount: apiAppointment.amount || null,
     });
     setIsAppointmentModalOpen(true);
   };

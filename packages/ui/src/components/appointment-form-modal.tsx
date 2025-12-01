@@ -35,6 +35,7 @@ export interface AppointmentFormData {
   end_time: string;
   memo: string;
   grooming_type: string;
+  amount: number | null;
 }
 
 export interface DogRegisterData {
@@ -72,6 +73,7 @@ export interface AppointmentFormModalProps {
     end_time: string;
     memo: string;
     grooming_type: string;
+    amount: number | null;
   };
 }
 
@@ -100,6 +102,7 @@ export function AppointmentFormModal({
     end_time: "",
     memo: "",
     grooming_type: "",
+    amount: null,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedDog, setSelectedDog] = useState<DogSearchItem | null>(null);
@@ -130,6 +133,7 @@ export function AppointmentFormModal({
           end_time: editData.end_time,
           memo: editData.memo,
           grooming_type: editData.grooming_type,
+          amount: editData.amount,
         });
         setSelectedDog({
           id: editData.dog_id,
@@ -162,6 +166,7 @@ export function AppointmentFormModal({
         end_time: "",
         memo: "",
         grooming_type: "",
+        amount: null,
       });
       setSelectedDog(null);
       setIsDogRegisterOpen(false);
@@ -570,6 +575,30 @@ export function AppointmentFormModal({
                   }}
                 />
               )}
+            </div>
+
+            {/* 금액 */}
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                금액 (원)
+              </label>
+              <Input
+                type="number"
+                placeholder="예: 50000"
+                value={formData.amount !== null ? String(formData.amount) : ""}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  handleInputChange(
+                    "amount",
+                    value === "" ? null : Number(value)
+                  );
+                }}
+                classNames={{
+                  inputWrapper:
+                    "bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700",
+                }}
+                startContent={<span className="text-zinc-400 text-sm">₩</span>}
+              />
             </div>
 
             {/* 메모 */}
