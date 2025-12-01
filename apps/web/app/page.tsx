@@ -324,11 +324,20 @@ export default function Home() {
   };
 
   // DailyView용 groomers 변환 (user_id를 id로 사용하여 appointments와 매칭)
-  const dailyGroomers: DailyGroomer[] = groomers.map((g, index) => ({
-    id: g.user_id, // user_id를 사용하여 appointments의 created_by_user_id와 매칭
-    name: g.name,
-    color: GROOMER_COLORS[index % GROOMER_COLORS.length],
-  }));
+  // "미배정" 그루머를 먼저 추가하고, 실제 직원들을 추가
+  console.log(groomers);
+  const dailyGroomers: DailyGroomer[] = [
+    {
+      id: 0, // 미배정 ID
+      name: "미배정",
+      color: "bg-gray-100 border-gray-300",
+    },
+    ...groomers.map((g, index) => ({
+      id: g.user_id, // user_id를 사용하여 appointments의 assigned_user_id와 매칭
+      name: g.name,
+      color: GROOMER_COLORS[index % GROOMER_COLORS.length],
+    })),
+  ];
 
   // 시간 형식 변환 (HH:MM:SS -> HH:MM)
   const formatTime = (time: string | null | undefined): string => {
@@ -347,11 +356,20 @@ export default function Home() {
   const dailyAppointments: DailyAppointment[] = appointments
     .filter((apt) => isSameDate(apt.appointment_at, selectedDate))
     .map((apt) => {
-      // assigned_user_id가 있으면 담당 미용사, 없으면 created_by_user_id 사용
-      const assignedUserId = apt.assigned_user_id || apt.created_by_user_id;
+      // assigned_user_id가 있고 해당 직원이 존재하면 그 ID 사용, 없으면 0(미배정)
+      let groomerId = 0; // 기본값: 미배정
+      if (apt.assigned_user_id) {
+        // assigned_user_id가 dailyGroomers에 있는지 확인
+        const groomerExists = groomers.some(
+          (g) => g.user_id === apt.assigned_user_id
+        );
+        if (groomerExists) {
+          groomerId = apt.assigned_user_id;
+        }
+      }
       return {
         id: apt.id,
-        groomerId: assignedUserId,
+        groomerId: groomerId,
         startTime: formatTime(apt.start_time),
         endTime: formatTime(apt.end_time),
         dogName: apt.dog?.name || "이름 없음",
