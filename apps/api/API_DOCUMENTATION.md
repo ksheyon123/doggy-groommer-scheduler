@@ -310,13 +310,18 @@ USER ||--o{ DOG : "assigned to"
 
 ### 1. 샵별 직원 목록 조회
 
-특정 샵의 직원 목록을 조회합니다.
+특정 샵의 직원 목록을 조회합니다. (Pagination 지원)
 
 **Endpoint**: `GET /api/employees/shop/:shopId`
 
 **Parameters**:
 
 - `shopId` (required): 샵 ID
+
+**Query Parameters**:
+
+- `page` (optional): 페이지 번호 (기본값: 1)
+- `limit` (optional): 페이지당 항목 수 (기본값: 20, 최대: 100)
 
 **Response**:
 
@@ -341,7 +346,15 @@ USER ||--o{ DOG : "assigned to"
         "name": "해피독 미용실"
       }
     }
-  ]
+  ],
+  "pagination": {
+    "currentPage": 1,
+    "totalPages": 5,
+    "totalCount": 100,
+    "limit": 20,
+    "hasNextPage": true,
+    "hasPrevPage": false
+  }
 }
 ```
 
@@ -497,13 +510,50 @@ USER ||--o{ DOG : "assigned to"
 
 ### 4. 샵별 강아지 목록 조회
 
-특정 샵에 등록된 모든 강아지를 조회합니다.
+특정 샵에 등록된 모든 강아지를 조회합니다. (Pagination 지원)
 
 **Endpoint**: `GET /api/dogs/shop/:shopId`
 
 **Parameters**:
 
 - `shopId` (required): 샵 ID
+
+**Query Parameters**:
+
+- `page` (optional): 페이지 번호 (기본값: 1)
+- `limit` (optional): 페이지당 항목 수 (기본값: 20, 최대: 100)
+
+**Response**:
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "shop_id": 1,
+      "name": "뽀삐",
+      "breed": "푸들",
+      "owner_name": "홍길동",
+      "owner_phone_number": "010-1234-5678",
+      "note": "털이 많이 빠짐",
+      "created_at": "2024-01-01T00:00:00.000Z",
+      "shop": {
+        "id": 1,
+        "name": "해피독 미용실"
+      }
+    }
+  ],
+  "pagination": {
+    "currentPage": 1,
+    "totalPages": 5,
+    "totalCount": 100,
+    "limit": 20,
+    "hasNextPage": true,
+    "hasPrevPage": false
+  }
+}
+```
 
 ---
 
@@ -638,13 +688,69 @@ USER ||--o{ DOG : "assigned to"
 
 ### 3. 샵별 예약 조회
 
-특정 샵의 모든 예약을 조회합니다.
+특정 샵의 모든 예약을 조회합니다. (Pagination 지원)
 
 **Endpoint**: `GET /api/appointments/shop/:shopId`
 
 **Parameters**:
 
 - `shopId` (required): 샵 ID
+
+**Query Parameters**:
+
+- `page` (optional): 페이지 번호 (기본값: 1)
+- `limit` (optional): 페이지당 항목 수 (기본값: 20, 최대: 100)
+
+**Response**:
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "shop_id": 1,
+      "dog_id": 1,
+      "created_by_user_id": 1,
+      "assigned_user_id": 2,
+      "grooming_type": "전체미용",
+      "memo": "다리 털 짧게",
+      "amount": 50000,
+      "appointment_at": "2024-01-15",
+      "start_time": "10:00:00",
+      "end_time": "12:00:00",
+      "status": "scheduled",
+      "shop": {
+        "id": 1,
+        "name": "해피독 미용실"
+      },
+      "createdByUser": {
+        "id": 1,
+        "name": "홍길동",
+        "email": "hong@example.com"
+      },
+      "assignedUser": {
+        "id": 2,
+        "name": "김미용",
+        "email": "kim@example.com"
+      },
+      "dog": {
+        "id": 1,
+        "name": "뽀삐",
+        "breed": "푸들"
+      }
+    }
+  ],
+  "pagination": {
+    "currentPage": 1,
+    "totalPages": 5,
+    "totalCount": 100,
+    "limit": 20,
+    "hasNextPage": true,
+    "hasPrevPage": false
+  }
+}
+```
 
 ---
 

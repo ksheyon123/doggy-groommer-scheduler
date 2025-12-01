@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth, getAccessToken } from "@/lib/auth";
 import { useShop } from "@/lib/shop";
 import { useRouter } from "next/navigation";
+import { Paginator } from "@repo/ui";
 
 // 타입 정의
 interface Shop {
@@ -29,6 +30,16 @@ interface Employee {
   };
 }
 
+// Pagination 타입
+interface PaginationInfo {
+  currentPage: number;
+  totalPages: number;
+  totalCount: number;
+  limit: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
+
 // API 기본 URL
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -46,6 +57,9 @@ export default function EmployeeManagementPage() {
   const [isLoadingShops, setIsLoadingShops] = useState(false);
   const [isLoadingEmployees, setIsLoadingEmployees] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState<PaginationInfo | null>(null);
+  const ITEMS_PER_PAGE = 10;
 
   // 직원 추가 모달 상태
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -101,14 +115,14 @@ export default function EmployeeManagementPage() {
   };
 
   // 선택된 매장의 직원 목록 조회
-  const fetchEmployees = async () => {
+  const fetchEmployees = async (page: number = 1) => {
     if (!selectedShopId) return;
 
     setIsLoadingEmployees(true);
     try {
       const accessToken = getAccessToken();
       const response = await fetch(
-        `${API_BASE_URL}/api/employees/shop/${selectedShopId}`,
+        `${API_BASE_URL}/api/employees/shop/${selectedShopId}?page=${page}&limit=${ITEMS_PER_PAGE}`,
         {
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -118,9 +132,17 @@ export default function EmployeeManagementPage() {
       const data = await response.json();
       if (response.ok && data.success) {
         setEmployees(data.data);
+        if (data.pagination) {
+          setPagination(data.pagination);
+        }
+      } else {
+        setEmployees([]);
+        setPagination(null);
       }
     } catch (error) {
       console.error("직원 목록 조회 실패:", error);
+      setEmployees([]);
+      setPagination(null);
     } finally {
       setIsLoadingEmployees(false);
     }
@@ -150,9 +172,19 @@ export default function EmployeeManagementPage() {
   // 선택된 매장 변경 시 직원 목록 조회
   useEffect(() => {
     if (selectedShopId) {
-      fetchEmployees();
+      setCurrentPage(1);
+      fetchEmployees(1);
+    } else {
+      setEmployees([]);
+      setPagination(null);
     }
   }, [selectedShopId]);
+
+  // 페이지 변경
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    fetchEmployees(page);
+  };
 
   // 직원 추가 처리
   const handleAddEmployee = async () => {
@@ -192,7 +224,8 @@ export default function EmployeeManagementPage() {
         showAlert("알림", "초대가 발송되었습니다.");
         // 직원 목록 새로고침
         if (selectedShopId === addShopId) {
-          fetchEmployees();
+          setCurrentPage(1);
+          fetchEmployees(1);
         }
       } else {
         showAlert("알림", data.message || "직원 추가에 실패했습니다.");
@@ -594,6 +627,12 @@ export default function EmployeeManagementPage() {
                   : "매장을 선택해주세요."}
               </p>
             </div>
+          )}
+          {pagination && employees.length > 0 && (
+            <Paginator
+              pagination={pagination}
+              onPageChange={handlePageChange}
+            />
           )}
         </div>
       </main>

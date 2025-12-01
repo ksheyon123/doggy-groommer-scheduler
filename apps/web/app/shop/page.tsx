@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth, getAccessToken } from "@/lib/auth";
 import { useShop } from "@/lib/shop";
 import { useRouter } from "next/navigation";
+import { Paginator } from "@repo/ui";
 
 // 매장 타입
 interface Shop {
@@ -58,6 +59,16 @@ interface GroomingRecord {
   timeSlot: string;
   assignedUser: string;
   status: "완료" | "예약" | "대기중";
+}
+
+// Pagination 타입
+interface PaginationInfo {
+  currentPage: number;
+  totalPages: number;
+  totalCount: number;
+  limit: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
 }
 
 // API 상태를 화면 표시용 상태로 변환
@@ -131,6 +142,9 @@ export default function ShopManagementPage() {
   const [endDate, setEndDate] = useState(weeklyRange.end);
   const [records, setRecords] = useState<GroomingRecord[]>([]);
   const [isLoadingRecords, setIsLoadingRecords] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState<PaginationInfo | null>(null);
+  const ITEMS_PER_PAGE = 10;
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [shopName, setShopName] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
@@ -221,7 +235,7 @@ export default function ShopManagementPage() {
   };
 
   // 예약 내역 조회
-  const fetchAppointments = async (shopId: number) => {
+  const fetchAppointments = async (shopId: number, page: number = 1) => {
     const accessToken = getAccessToken();
     if (!accessToken) {
       console.log("로그인이 필요합니다.");
@@ -231,7 +245,7 @@ export default function ShopManagementPage() {
     setIsLoadingRecords(true);
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/appointments/shop/${shopId}`,
+        `${API_BASE_URL}/api/appointments/shop/${shopId}?page=${page}&limit=${ITEMS_PER_PAGE}`,
         {
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -239,6 +253,7 @@ export default function ShopManagementPage() {
         }
       );
       const data = await response.json();
+      console.log(data);
       if (response.ok && data.success) {
         // 기간 필터링 적용
         const filteredData = data.data.filter(
@@ -248,14 +263,20 @@ export default function ShopManagementPage() {
             return appointmentDate >= startDate && appointmentDate <= endDate;
           }
         );
+        console.log("filteredData : ", filteredData);
         const convertedRecords = filteredData.map(convertToRecord);
         setRecords(convertedRecords);
+        if (data.pagination) {
+          setPagination(data.pagination);
+        }
       } else {
         setRecords([]);
+        setPagination(null);
       }
     } catch (error) {
       console.error("예약 내역 조회 실패:", error);
       setRecords([]);
+      setPagination(null);
     } finally {
       setIsLoadingRecords(false);
     }
@@ -264,16 +285,27 @@ export default function ShopManagementPage() {
   // 매장 선택 시 예약 내역 조회
   useEffect(() => {
     if (selectedShopId) {
-      fetchAppointments(selectedShopId);
+      setCurrentPage(1);
+      fetchAppointments(selectedShopId, 1);
     } else {
       setRecords([]);
+      setPagination(null);
     }
   }, [selectedShopId, startDate, endDate]);
 
   // 기간 조회
   const handleSearch = () => {
     if (selectedShopId) {
-      fetchAppointments(selectedShopId);
+      setCurrentPage(1);
+      fetchAppointments(selectedShopId, 1);
+    }
+  };
+
+  // 페이지 변경
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    if (selectedShopId) {
+      fetchAppointments(selectedShopId, page);
     }
   };
 
@@ -722,6 +754,12 @@ export default function ShopManagementPage() {
                       : "매장을 선택해주세요."}
                   </p>
                 </div>
+              )}
+              {pagination && records.length > 0 && (
+                <Paginator
+                  pagination={pagination}
+                  onPageChange={handlePageChange}
+                />
               )}
             </>
           )}

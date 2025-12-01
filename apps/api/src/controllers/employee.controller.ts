@@ -3,12 +3,20 @@ import { Employee } from "../models/Employee";
 import { Shop } from "../models/Shop";
 import { User } from "../models/User";
 
-// 샵별 직원 목록 조회
+// 샵별 직원 목록 조회 (pagination 지원)
 export const getEmployeesByShopId = async (req: Request, res: Response) => {
   try {
     const { shopId } = req.params;
+    const { page = "1", limit = "20" } = req.query;
 
-    const employees = await Employee.findAll({
+    const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
+    const limitNum = Math.min(
+      100,
+      Math.max(1, parseInt(limit as string, 10) || 20)
+    );
+    const offset = (pageNum - 1) * limitNum;
+
+    const { count, rows: employees } = await Employee.findAndCountAll({
       where: { shop_id: shopId },
       include: [
         {
@@ -21,11 +29,23 @@ export const getEmployeesByShopId = async (req: Request, res: Response) => {
         },
       ],
       order: [["created_at", "DESC"]],
+      limit: limitNum,
+      offset: offset,
     });
+
+    const totalPages = Math.ceil(count / limitNum);
 
     res.status(200).json({
       success: true,
       data: employees,
+      pagination: {
+        currentPage: pageNum,
+        totalPages: totalPages,
+        totalCount: count,
+        limit: limitNum,
+        hasNextPage: pageNum < totalPages,
+        hasPrevPage: pageNum > 1,
+      },
     });
   } catch (error) {
     res.status(500).json({

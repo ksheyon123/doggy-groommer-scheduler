@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth, getAccessToken } from "@/lib/auth";
 import { useShop } from "@/lib/shop";
 import { useRouter } from "next/navigation";
+import { Paginator } from "@repo/ui";
 
 interface Dog {
   id: number;
@@ -17,6 +18,15 @@ interface Dog {
   updated_at: string;
 }
 
+interface PaginationInfo {
+  currentPage: number;
+  totalPages: number;
+  totalCount: number;
+  limit: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 export default function CustomerManagementPage() {
@@ -25,6 +35,9 @@ export default function CustomerManagementPage() {
   const [dogs, setDogs] = useState<Dog[]>([]);
   const [isLoadingDogs, setIsLoadingDogs] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState<PaginationInfo | null>(null);
+  const ITEMS_PER_PAGE = 10;
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedDog, setSelectedDog] = useState<Dog | null>(null);
@@ -65,28 +78,51 @@ export default function CustomerManagementPage() {
   const closeAlert = () =>
     setAlertModal({ isOpen: false, title: "", message: "" });
 
-  const fetchDogs = async (shopId: number) => {
+  const fetchDogs = async (shopId: number, page: number = 1) => {
     const accessToken = getAccessToken();
     if (!accessToken) return;
     setIsLoadingDogs(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/dogs/shop/${shopId}`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/api/dogs/shop/${shopId}?page=${page}&limit=${ITEMS_PER_PAGE}`,
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        }
+      );
       const data = await response.json();
-      if (response.ok && data.success) setDogs(data.data);
-      else setDogs([]);
+      if (response.ok && data.success) {
+        setDogs(data.data);
+        if (data.pagination) {
+          setPagination(data.pagination);
+        }
+      } else {
+        setDogs([]);
+        setPagination(null);
+      }
     } catch {
       setDogs([]);
+      setPagination(null);
     } finally {
       setIsLoadingDogs(false);
     }
   };
 
   useEffect(() => {
-    if (selectedShopId) fetchDogs(selectedShopId);
-    else setDogs([]);
+    if (selectedShopId) {
+      setCurrentPage(1);
+      fetchDogs(selectedShopId, 1);
+    } else {
+      setDogs([]);
+      setPagination(null);
+    }
   }, [selectedShopId]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    if (selectedShopId) {
+      fetchDogs(selectedShopId, page);
+    }
+  };
 
   const handleRegisterDog = async () => {
     if (!newDog.name.trim()) {
@@ -130,7 +166,8 @@ export default function CustomerManagementPage() {
         });
         setIsRegisterModalOpen(false);
         showAlert("알림", "강아지가 등록되었습니다.");
-        fetchDogs(selectedShopId);
+        setCurrentPage(1);
+        fetchDogs(selectedShopId, 1);
       } else showAlert("알림", data.message || "등록에 실패했습니다.");
     } catch {
       showAlert("알림", "등록 중 오류가 발생했습니다.");
@@ -168,7 +205,7 @@ export default function CustomerManagementPage() {
       if (response.ok && data.success) {
         setIsEditMode(false);
         showAlert("알림", "정보가 수정되었습니다.");
-        if (selectedShopId) fetchDogs(selectedShopId);
+        if (selectedShopId) fetchDogs(selectedShopId, currentPage);
       } else showAlert("알림", data.message || "수정에 실패했습니다.");
     } catch {
       showAlert("알림", "수정 중 오류가 발생했습니다.");
@@ -195,7 +232,10 @@ export default function CustomerManagementPage() {
         setIsDetailModalOpen(false);
         setSelectedDog(null);
         showAlert("알림", "삭제되었습니다.");
-        if (selectedShopId) fetchDogs(selectedShopId);
+        if (selectedShopId) {
+          setCurrentPage(1);
+          fetchDogs(selectedShopId, 1);
+        }
       } else showAlert("알림", data.message || "삭제에 실패했습니다.");
     } catch {
       showAlert("알림", "삭제 중 오류가 발생했습니다.");
@@ -758,6 +798,12 @@ export default function CustomerManagementPage() {
                       : "매장을 선택해주세요."}
                   </p>
                 </div>
+              )}
+              {pagination && filteredDogs.length > 0 && (
+                <Paginator
+                  pagination={pagination}
+                  onPageChange={handlePageChange}
+                />
               )}
             </>
           )}

@@ -112,12 +112,20 @@ export const getDogWithAppointments = async (req: Request, res: Response) => {
   }
 };
 
-// 샵별 강아지 목록 조회
+// 샵별 강아지 목록 조회 (pagination 지원)
 export const getDogsByShopId = async (req: Request, res: Response) => {
   try {
     const { shopId } = req.params;
+    const { page = "1", limit = "20" } = req.query;
 
-    const dogs = await Dog.findAll({
+    const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
+    const limitNum = Math.min(
+      100,
+      Math.max(1, parseInt(limit as string, 10) || 20)
+    );
+    const offset = (pageNum - 1) * limitNum;
+
+    const { count, rows: dogs } = await Dog.findAndCountAll({
       where: { shop_id: shopId },
       include: [
         {
@@ -126,11 +134,23 @@ export const getDogsByShopId = async (req: Request, res: Response) => {
         },
       ],
       order: [["created_at", "DESC"]],
+      limit: limitNum,
+      offset: offset,
     });
+
+    const totalPages = Math.ceil(count / limitNum);
 
     res.status(200).json({
       success: true,
       data: dogs,
+      pagination: {
+        currentPage: pageNum,
+        totalPages: totalPages,
+        totalCount: count,
+        limit: limitNum,
+        hasNextPage: pageNum < totalPages,
+        hasPrevPage: pageNum > 1,
+      },
     });
   } catch (error) {
     res.status(500).json({

@@ -333,39 +333,60 @@ export const deleteAppointment = async (req: Request, res: Response) => {
   }
 };
 
-// 샵별 예약 조회
+// 샵별 예약 조회 (pagination 지원)
 export const getAppointmentsByShopId = async (req: Request, res: Response) => {
   try {
     const { shopId } = req.params;
+    const { page = "1", limit = "20" } = req.query;
 
-    const appointments = await GroomingAppointment.findAll({
-      where: { shop_id: shopId },
-      include: [
-        {
-          model: Shop,
-          attributes: ["id", "name"],
-        },
-        {
-          model: User,
-          as: "createdByUser",
-          attributes: ["id", "name", "email"],
-        },
-        {
-          model: User,
-          as: "assignedUser",
-          attributes: ["id", "name", "email"],
-        },
-        {
-          model: Dog,
-          attributes: ["id", "name", "breed"],
-        },
-      ],
-      order: [["appointment_at", "DESC"]],
-    });
+    const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
+    const limitNum = Math.min(
+      100,
+      Math.max(1, parseInt(limit as string, 10) || 20)
+    );
+    const offset = (pageNum - 1) * limitNum;
+
+    const { count, rows: appointments } =
+      await GroomingAppointment.findAndCountAll({
+        where: { shop_id: shopId },
+        include: [
+          {
+            model: Shop,
+            attributes: ["id", "name"],
+          },
+          {
+            model: User,
+            as: "createdByUser",
+            attributes: ["id", "name", "email"],
+          },
+          {
+            model: User,
+            as: "assignedUser",
+            attributes: ["id", "name", "email"],
+          },
+          {
+            model: Dog,
+            attributes: ["id", "name", "breed"],
+          },
+        ],
+        order: [["appointment_at", "DESC"]],
+        limit: limitNum,
+        offset: offset,
+      });
+
+    const totalPages = Math.ceil(count / limitNum);
 
     res.status(200).json({
       success: true,
       data: appointments,
+      pagination: {
+        currentPage: pageNum,
+        totalPages: totalPages,
+        totalCount: count,
+        limit: limitNum,
+        hasNextPage: pageNum < totalPages,
+        hasPrevPage: pageNum > 1,
+      },
     });
   } catch (error) {
     res.status(500).json({
