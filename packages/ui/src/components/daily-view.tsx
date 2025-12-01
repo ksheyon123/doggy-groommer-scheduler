@@ -26,6 +26,7 @@ export interface DailyViewProps {
   onTimeSlotClick?: (groomerId: number, time: string) => void;
   onAppointmentClick?: (appointment: Appointment) => void;
   onBackToWeekly?: () => void;
+  onDateChange?: (date: Date) => void;
 }
 
 // 시간 슬롯 생성 (06:00 ~ 22:00, 1시간 단위)
@@ -38,6 +39,7 @@ export function DailyView({
   onBackToWeekly,
   onTimeSlotClick,
   onAppointmentClick,
+  onDateChange,
 }: DailyViewProps) {
   // 그리드 열 수 계산 (최소 1개)
   const gridColCount = Math.max(groomers.length, 1);
@@ -94,19 +96,66 @@ export function DailyView({
     return `${year}년 ${month}월 ${day}일 (${weekday})`;
   };
 
+  // 이전 날짜로 이동
+  const goToPreviousDay = () => {
+    const newDate = new Date(date);
+    newDate.setDate(date.getDate() - 1);
+    onDateChange?.(newDate);
+  };
+
+  // 다음 날짜로 이동
+  const goToNextDay = () => {
+    const newDate = new Date(date);
+    newDate.setDate(date.getDate() + 1);
+    onDateChange?.(newDate);
+  };
+
+  // 오늘로 이동
+  const goToToday = () => {
+    onDateChange?.(new Date());
+  };
+
   return (
     <div className="max-h-[calc(100vh-150px)] flex flex-col bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-800 overflow-hidden">
       {/* 날짜 헤더 */}
       <div className="px-6 py-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+        <button
+          onClick={goToPreviousDay}
+          className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+          aria-label="이전 날"
+        >
+          <svg
+            className="w-5 h-5 text-zinc-600 dark:text-zinc-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
+        </button>
+
+        <div className="flex items-center gap-4">
+          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+            {formatDate(date)}
+          </h2>
+          <button
+            onClick={goToToday}
+            className="px-3 py-1 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-50 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md transition-colors"
+          >
+            오늘
+          </button>
           {onBackToWeekly && (
             <button
               onClick={onBackToWeekly}
-              className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-              aria-label="주간 뷰로 돌아가기"
+              className="px-3 py-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors flex items-center gap-1"
             >
               <svg
-                className="w-5 h-5 text-zinc-600 dark:text-zinc-400"
+                className="w-4 h-4"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -115,36 +164,33 @@ export function DailyView({
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M15 19l-7-7 7-7"
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                 />
               </svg>
+              주간 뷰
             </button>
           )}
-          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-            {formatDate(date)}
-          </h2>
         </div>
-        {onBackToWeekly && (
-          <button
-            onClick={onBackToWeekly}
-            className="px-3 py-1.5 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-50 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md transition-colors flex items-center gap-1"
+
+        <button
+          onClick={goToNextDay}
+          className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+          aria-label="다음 날"
+        >
+          <svg
+            className="w-5 h-5 text-zinc-600 dark:text-zinc-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
           >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-              />
-            </svg>
-            주간 뷰
-          </button>
-        )}
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 5l7 7-7 7"
+            />
+          </svg>
+        </button>
       </div>
 
       {/* 미용선생님 + 시간대 그리드 */}

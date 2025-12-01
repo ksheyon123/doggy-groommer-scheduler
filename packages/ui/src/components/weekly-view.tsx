@@ -20,6 +20,7 @@ interface WeeklyViewProps {
   onTimeSlotSelect?: (date: Date, hour: number) => void;
   onAppointmentClick?: (appointment: WeeklyAppointment) => void;
   onDayClick?: (date: Date) => void;
+  onWeekChange?: (date: Date) => void;
   selectedDate?: Date;
   appointments?: WeeklyAppointment[];
   className?: string;
@@ -30,6 +31,7 @@ export function WeeklyView({
   onTimeSlotSelect,
   onAppointmentClick,
   onDayClick,
+  onWeekChange,
   selectedDate,
   appointments: propAppointments,
   className = "",
@@ -66,16 +68,20 @@ export function WeeklyView({
     const newDate = new Date(viewDate);
     newDate.setDate(viewDate.getDate() - 7);
     setViewDate(newDate);
+    onWeekChange?.(newDate);
   };
 
   const goToNextWeek = () => {
     const newDate = new Date(viewDate);
     newDate.setDate(viewDate.getDate() + 7);
     setViewDate(newDate);
+    onWeekChange?.(newDate);
   };
 
   const goToToday = () => {
-    setViewDate(new Date());
+    const today = new Date();
+    setViewDate(today);
+    onWeekChange?.(today);
   };
 
   const isSameDay = (date1: Date, date2: Date) => {

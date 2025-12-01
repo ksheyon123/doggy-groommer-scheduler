@@ -8,6 +8,8 @@ export * from "./components/calendar";
 export * from "./components/dropdown";
 export * from "./components/daily-view";
 export * from "./components/weekly-view";
+export * from "./components/monthly-view";
+export * from "./components/yearly-view";
 export * from "./components/modal";
 export * from "./components/login-modal";
 export * from "./components/search-dropdown";
