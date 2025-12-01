@@ -55,6 +55,8 @@ interface GroomingRecord {
   groomingType: string;
   cost: number;
   date: string;
+  timeSlot: string;
+  assignedUser: string;
   status: "완료" | "예약" | "대기중";
 }
 
@@ -72,14 +74,29 @@ const convertStatus = (apiStatus: string): "완료" | "예약" | "대기중" => 
   }
 };
 
+// 시간 포맷 변환 (HH:mm:ss -> HH:mm)
+const formatTime = (time: string | null): string => {
+  if (!time) return "";
+  return time.substring(0, 5); // HH:mm 형식으로 변환
+};
+
 // API 응답을 화면 표시용 데이터로 변환
 const convertToRecord = (appointment: GroomingAppointment): GroomingRecord => {
+  const startTime = formatTime(appointment.start_time);
+  const endTime = formatTime(appointment.end_time);
+  const timeSlot =
+    startTime && endTime
+      ? `${startTime} ~ ${endTime}`
+      : startTime || endTime || "-";
+
   return {
     id: appointment.id,
     dogName: appointment.dog?.name || "알 수 없음",
     groomingType: appointment.grooming_type || "미정",
     cost: appointment.amount || 0,
     date: appointment.appointment_at || "",
+    timeSlot: timeSlot,
+    assignedUser: appointment.assignedUser?.name || "-",
     status: convertStatus(appointment.status),
   };
 };
@@ -640,10 +657,16 @@ export default function ShopManagementPage() {
                         날짜
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                        시간대
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                         강아지명
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                         미용 타입
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                        담당자
                       </th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                         비용
@@ -662,6 +685,9 @@ export default function ShopManagementPage() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-600 dark:text-zinc-400">
                           {record.date}
                         </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-600 dark:text-zinc-400">
+                          {record.timeSlot}
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
                             {record.dogName}
@@ -669,6 +695,9 @@ export default function ShopManagementPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-600 dark:text-zinc-400">
                           {record.groomingType}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-600 dark:text-zinc-400">
+                          {record.assignedUser}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-zinc-900 dark:text-zinc-100">
                           {record.cost.toLocaleString()}원
