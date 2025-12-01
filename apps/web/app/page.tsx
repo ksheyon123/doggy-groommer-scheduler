@@ -20,6 +20,7 @@ import {
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getAccessToken, useAuth } from "@/lib/auth";
+import { useShop } from "@/lib/shop";
 
 // API 기본 URL
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
@@ -91,9 +92,10 @@ export default function Home() {
   const [viewMode, setViewMode] = useState<ViewMode>("weekly");
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [shops, setShops] = useState<Shop[]>([]);
-  const [selectedShop, setSelectedShop] = useState<Shop | null>(null);
   const [isShopDropdownOpen, setIsShopDropdownOpen] = useState(false);
+
+  // 전역 샵 상태 사용
+  const { shops, selectedShop, setSelectedShop, refreshShops } = useShop();
 
   // 예약 모달 상태
   const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false);
@@ -134,38 +136,12 @@ export default function Home() {
     return `${year}-${month}-${day}`;
   };
 
-  // 매장 목록 가져오기
+  // 매장 목록 가져오기 (전역 상태 사용)
   useEffect(() => {
-    const fetchShops = async () => {
-      if (!isAuthenticated) return;
-
-      const accessToken = getAccessToken();
-      if (!accessToken) {
-        console.log("로그인이 필요합니다.");
-        return;
-      }
-
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/shops`, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        });
-        const data = await response.json();
-
-        if (response.ok && data.success) {
-          setShops(data.data);
-          // 첫 번째 매장을 기본 선택
-          if (data.data.length > 0 && !selectedShop) {
-            setSelectedShop(data.data[0]);
-          }
-        }
-      } catch (error) {
-        console.error("매장 목록 조회 실패:", error);
-      }
-    };
-
-    fetchShops();
+    if (isAuthenticated) {
+      refreshShops();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]);
 
   // 미용 종류 가져오기

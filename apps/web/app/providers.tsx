@@ -2,6 +2,7 @@
 
 import { UIProvider } from "@repo/ui";
 import { AuthProvider } from "@/lib/auth";
+import { ShopProvider } from "@/lib/shop";
 import type { ReactNode } from "react";
 
 interface ProvidersProps {
@@ -11,7 +12,9 @@ interface ProvidersProps {
 export function Providers({ children }: ProvidersProps) {
   return (
     <AuthProvider>
-      <UIProvider>{children}</UIProvider>
+      <ShopProvider>
+        <UIProvider>{children}</UIProvider>
+      </ShopProvider>
     </AuthProvider>
   );
 }

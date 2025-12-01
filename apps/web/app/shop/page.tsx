@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth, getAccessToken } from "@/lib/auth";
+import { useShop } from "@/lib/shop";
 import { useRouter } from "next/navigation";
 
 // 매장 타입
@@ -104,48 +105,31 @@ export default function ShopManagementPage() {
     message: string;
   }>({ isOpen: false, title: "", message: "" });
 
-  // 매장 관련 상태
-  const [shops, setShops] = useState<Shop[]>([]);
+  // 전역 샵 상태 사용
+  const {
+    shops,
+    selectedShop: globalSelectedShop,
+    isLoadingShops,
+    refreshShops,
+  } = useShop();
+
+  // 로컬 선택 상태 (전역 상태를 기본값으로 사용)
   const [selectedShopId, setSelectedShopId] = useState<number | null>(null);
-  const [isLoadingShops, setIsLoadingShops] = useState(false);
+
+  // 전역 상태가 변경되면 로컬 상태에 반영 (초기화 시)
+  useEffect(() => {
+    if (globalSelectedShop && selectedShopId === null) {
+      setSelectedShopId(globalSelectedShop.id);
+    }
+  }, [globalSelectedShop, selectedShopId]);
 
   // 선택된 매장 정보
   const selectedShop = shops.find((shop) => shop.id === selectedShopId);
 
-  // 매장 목록 조회
-  const fetchShops = async () => {
-    const accessToken = getAccessToken();
-    console.log(accessToken);
-    if (!accessToken) {
-      console.log("로그인이 필요합니다.");
-      return;
-    }
-
-    setIsLoadingShops(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/shops`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
-      const data = await response.json();
-      if (response.ok && data.success) {
-        setShops(data.data);
-        // 첫 번째 매장을 기본 선택
-        if (data.data.length > 0 && !selectedShopId) {
-          setSelectedShopId(data.data[0].id);
-        }
-      }
-    } catch (error) {
-      console.error("매장 목록 조회 실패:", error);
-    } finally {
-      setIsLoadingShops(false);
-    }
-  };
-
   // 컴포넌트 마운트 시 매장 목록 조회
   useEffect(() => {
-    fetchShops();
+    refreshShops();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 알림 모달 표시
@@ -189,7 +173,7 @@ export default function ShopManagementPage() {
         setIsRegisterModalOpen(false);
         showAlert("알림", "등록되었습니다.");
         // 매장 목록 새로고침
-        fetchShops();
+        refreshShops();
       } else {
         showAlert("알림", data.message || "매장 등록에 실패했습니다.");
       }
