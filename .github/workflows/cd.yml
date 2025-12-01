@@ -103,6 +103,12 @@ jobs:
             API_URL=${{ secrets.API_URL }}
             GMAIL_USER=${{secrets.GMAIL_USER}}
             GMAIL_APP_PASSWORD=${{secrets.GMAIL_APP_PASSWORD}}
+            GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+            GOOGLE_CLIENT_KEY=${{ secrets.GOOGLE_CLIENT_KEY }}
+            KAKAO_CLIENT_ID=${{ secrets.KAKAO_CLIENT_ID }}
+            KAKAO_CLIENT_SECRET=${{ secrets.KAKAO_CLIENT_SECRET }}
+            NAVER_CLIENT_ID=${{ secrets.NAVER_CLIENT_ID }}
+            NAVER_CLIENT_SECRET=${{ secrets.NAVER_CLIENT_SECRET }}
             EOF
 
             # 최신 이미지 pull
