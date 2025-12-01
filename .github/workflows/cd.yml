@@ -101,6 +101,8 @@ jobs:
             JWT_ACCESS_SECRET=${{ secrets.JWT_ACCESS_SECRET }}
             JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}
             API_URL=${{ secrets.API_URL }}
+            GMAIL_USER=${{secrets.GMAIL_USER}}
+            GMAIL_APP_PASSWORD=${{secrets.GMAIL_APP_PASSWORD}}
             EOF
 
             # 최신 이미지 pull
