@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { Op } from "sequelize";
 import { GroomingAppointment } from "../models/GroomingAppointment";
 import { Dog } from "../models/Dog";
 import { User } from "../models/User";
@@ -333,11 +334,11 @@ export const deleteAppointment = async (req: Request, res: Response) => {
   }
 };
 
-// 샵별 예약 조회 (pagination 지원)
+// 샵별 예약 조회 (pagination 및 기간 필터링 지원)
 export const getAppointmentsByShopId = async (req: Request, res: Response) => {
   try {
     const { shopId } = req.params;
-    const { page = "1", limit = "20" } = req.query;
+    const { page = "1", limit = "20", startDate, endDate } = req.query;
 
     const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
     const limitNum = Math.min(
@@ -346,9 +347,27 @@ export const getAppointmentsByShopId = async (req: Request, res: Response) => {
     );
     const offset = (pageNum - 1) * limitNum;
 
+    // where 절 구성
+    const whereClause: Record<string, unknown> = { shop_id: shopId };
+
+    // 기간 필터링 추가
+    if (startDate && endDate) {
+      whereClause.appointment_at = {
+        [Op.between]: [startDate as string, endDate as string],
+      };
+    } else if (startDate) {
+      whereClause.appointment_at = {
+        [Op.gte]: startDate as string,
+      };
+    } else if (endDate) {
+      whereClause.appointment_at = {
+        [Op.lte]: endDate as string,
+      };
+    }
+
     const { count, rows: appointments } =
       await GroomingAppointment.findAndCountAll({
-        where: { shop_id: shopId },
+        where: whereClause,
         include: [
           {
             model: Shop,

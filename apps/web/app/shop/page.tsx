@@ -235,7 +235,12 @@ export default function ShopManagementPage() {
   };
 
   // 예약 내역 조회
-  const fetchAppointments = async (shopId: number, page: number = 1) => {
+  const fetchAppointments = async (
+    shopId: number,
+    page: number = 1,
+    start: string = startDate,
+    end: string = endDate
+  ) => {
     const accessToken = getAccessToken();
     if (!accessToken) {
       console.log("로그인이 필요합니다.");
@@ -245,7 +250,7 @@ export default function ShopManagementPage() {
     setIsLoadingRecords(true);
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/appointments/shop/${shopId}?page=${page}&limit=${ITEMS_PER_PAGE}`,
+        `${API_BASE_URL}/api/appointments/shop/${shopId}?page=${page}&limit=${ITEMS_PER_PAGE}&startDate=${start}&endDate=${end}`,
         {
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -253,18 +258,8 @@ export default function ShopManagementPage() {
         }
       );
       const data = await response.json();
-      console.log(data);
       if (response.ok && data.success) {
-        // 기간 필터링 적용
-        const filteredData = data.data.filter(
-          (appointment: GroomingAppointment) => {
-            if (!appointment.appointment_at) return false;
-            const appointmentDate = appointment.appointment_at;
-            return appointmentDate >= startDate && appointmentDate <= endDate;
-          }
-        );
-        console.log("filteredData : ", filteredData);
-        const convertedRecords = filteredData.map(convertToRecord);
+        const convertedRecords = data.data.map(convertToRecord);
         setRecords(convertedRecords);
         if (data.pagination) {
           setPagination(data.pagination);
@@ -286,18 +281,18 @@ export default function ShopManagementPage() {
   useEffect(() => {
     if (selectedShopId) {
       setCurrentPage(1);
-      fetchAppointments(selectedShopId, 1);
+      fetchAppointments(selectedShopId, 1, startDate, endDate);
     } else {
       setRecords([]);
       setPagination(null);
     }
-  }, [selectedShopId, startDate, endDate]);
+  }, [selectedShopId]);
 
   // 기간 조회
   const handleSearch = () => {
     if (selectedShopId) {
       setCurrentPage(1);
-      fetchAppointments(selectedShopId, 1);
+      fetchAppointments(selectedShopId, 1, startDate, endDate);
     }
   };
 
@@ -305,7 +300,7 @@ export default function ShopManagementPage() {
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     if (selectedShopId) {
-      fetchAppointments(selectedShopId, page);
+      fetchAppointments(selectedShopId, page, startDate, endDate);
     }
   };
 
