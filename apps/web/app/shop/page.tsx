@@ -12,59 +12,76 @@ interface Shop {
   phone?: string;
 }
 
-// 임시 데이터 타입
+// API 응답 타입
+interface GroomingAppointment {
+  id: number;
+  shop_id: number;
+  dog_id: number;
+  created_by_user_id: number;
+  assigned_user_id: number | null;
+  grooming_type: string | null;
+  memo: string | null;
+  amount: number | null;
+  appointment_at: string | null;
+  start_time: string | null;
+  end_time: string | null;
+  status: string;
+  dog?: {
+    id: number;
+    name: string;
+    breed: string | null;
+  };
+  shop?: {
+    id: number;
+    name: string;
+  };
+  createdByUser?: {
+    id: number;
+    name: string;
+    email: string;
+  };
+  assignedUser?: {
+    id: number;
+    name: string;
+    email: string;
+  } | null;
+}
+
+// 화면 표시용 타입
 interface GroomingRecord {
   id: number;
   dogName: string;
   groomingType: string;
   cost: number;
   date: string;
-  status: "완료" | "정산완료" | "대기중";
+  status: "완료" | "예약" | "대기중";
 }
 
-// 임시 샘플 데이터
-const sampleData: GroomingRecord[] = [
-  {
-    id: 1,
-    dogName: "초코",
-    groomingType: "전체 미용",
-    cost: 50000,
-    date: "2024-11-28",
-    status: "완료",
-  },
-  {
-    id: 2,
-    dogName: "뽀삐",
-    groomingType: "목욕",
-    cost: 30000,
-    date: "2024-11-27",
-    status: "정산완료",
-  },
-  {
-    id: 3,
-    dogName: "몽이",
-    groomingType: "부분 미용",
-    cost: 35000,
-    date: "2024-11-26",
-    status: "대기중",
-  },
-  {
-    id: 4,
-    dogName: "콩이",
-    groomingType: "전체 미용",
-    cost: 55000,
-    date: "2024-11-25",
-    status: "정산완료",
-  },
-  {
-    id: 5,
-    dogName: "두부",
-    groomingType: "스파 + 미용",
-    cost: 80000,
-    date: "2024-11-24",
-    status: "완료",
-  },
-];
+// API 상태를 화면 표시용 상태로 변환
+const convertStatus = (apiStatus: string): "완료" | "예약" | "대기중" => {
+  switch (apiStatus) {
+    case "completed":
+      return "완료";
+    case "settled":
+    case "scheduled":
+      return "예약";
+    case "cancelled":
+    default:
+      return "대기중";
+  }
+};
+
+// API 응답을 화면 표시용 데이터로 변환
+const convertToRecord = (appointment: GroomingAppointment): GroomingRecord => {
+  return {
+    id: appointment.id,
+    dogName: appointment.dog?.name || "알 수 없음",
+    groomingType: appointment.grooming_type || "미정",
+    cost: appointment.amount || 0,
+    date: appointment.appointment_at || "",
+    status: convertStatus(appointment.status),
+  };
+};
 
 // API 기본 URL
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
@@ -94,7 +111,8 @@ export default function ShopManagementPage() {
   const weeklyRange = getWeeklyDateRange();
   const [startDate, setStartDate] = useState(weeklyRange.start);
   const [endDate, setEndDate] = useState(weeklyRange.end);
-  const [records, setRecords] = useState<GroomingRecord[]>(sampleData);
+  const [records, setRecords] = useState<GroomingRecord[]>([]);
+  const [isLoadingRecords, setIsLoadingRecords] = useState(false);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [shopName, setShopName] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
@@ -201,19 +219,71 @@ export default function ShopManagementPage() {
     }
   };
 
-  // 기간 조회
-  const handleSearch = () => {
-    // TODO: API 호출로 실제 데이터 조회
-    console.log("기간 조회:", startDate, "~", endDate);
+  // 예약 내역 조회
+  const fetchAppointments = async (shopId: number) => {
+    const accessToken = getAccessToken();
+    if (!accessToken) {
+      console.log("로그인이 필요합니다.");
+      return;
+    }
+
+    setIsLoadingRecords(true);
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/appointments/shop/${shopId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+      const data = await response.json();
+      if (response.ok && data.success) {
+        // 기간 필터링 적용
+        const filteredData = data.data.filter(
+          (appointment: GroomingAppointment) => {
+            if (!appointment.appointment_at) return false;
+            const appointmentDate = appointment.appointment_at;
+            return appointmentDate >= startDate && appointmentDate <= endDate;
+          }
+        );
+        const convertedRecords = filteredData.map(convertToRecord);
+        setRecords(convertedRecords);
+      } else {
+        setRecords([]);
+      }
+    } catch (error) {
+      console.error("예약 내역 조회 실패:", error);
+      setRecords([]);
+    } finally {
+      setIsLoadingRecords(false);
+    }
   };
 
+  // 매장 선택 시 예약 내역 조회
+  useEffect(() => {
+    if (selectedShopId) {
+      fetchAppointments(selectedShopId);
+    } else {
+      setRecords([]);
+    }
+  }, [selectedShopId, startDate, endDate]);
+
+  // 기간 조회
+  const handleSearch = () => {
+    if (selectedShopId) {
+      fetchAppointments(selectedShopId);
+    }
+  };
+
+  console.log(records);
   // 정산 합계 계산
   const totalAmount = records.reduce((sum, record) => sum + record.cost, 0);
   const completedAmount = records
-    .filter((r) => r.status === "정산완료")
+    .filter((r) => r.status === "예약")
     .reduce((sum, record) => sum + record.cost, 0);
   const pendingAmount = records
-    .filter((r) => r.status !== "정산완료")
+    .filter((r) => r.status !== "예약")
     .reduce((sum, record) => sum + record.cost, 0);
 
   // 상태별 배지 색상
@@ -221,7 +291,7 @@ export default function ShopManagementPage() {
     switch (status) {
       case "완료":
         return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400";
-      case "정산완료":
+      case "예약":
         return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400";
       case "대기중":
         return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400";
@@ -570,65 +640,78 @@ export default function ShopManagementPage() {
               미용 내역
             </h2>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-zinc-50 dark:bg-zinc-800/50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                    날짜
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                    강아지명
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                    미용 타입
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                    비용
-                  </th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                    정산 상태
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
-                {records.map((record) => (
-                  <tr
-                    key={record.id}
-                    className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors"
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-600 dark:text-zinc-400">
-                      {record.date}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                        {record.dogName}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-600 dark:text-zinc-400">
-                      {record.groomingType}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-zinc-900 dark:text-zinc-100">
-                      {record.cost.toLocaleString()}원
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                      <span
-                        className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusBadge(record.status)}`}
-                      >
-                        {record.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          {records.length === 0 && (
-            <div className="px-6 py-12 text-center">
-              <p className="text-zinc-500 dark:text-zinc-400">
-                조회된 내역이 없습니다.
-              </p>
+          {isLoadingRecords ? (
+            <div className="px-6 py-12 flex items-center justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <span className="ml-3 text-zinc-500 dark:text-zinc-400">
+                로딩 중...
+              </span>
             </div>
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-zinc-50 dark:bg-zinc-800/50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                        날짜
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                        강아지명
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                        미용 타입
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                        비용
+                      </th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                        정산 상태
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+                    {records.map((record) => (
+                      <tr
+                        key={record.id}
+                        className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors"
+                      >
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-600 dark:text-zinc-400">
+                          {record.date}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                            {record.dogName}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-600 dark:text-zinc-400">
+                          {record.groomingType}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-zinc-900 dark:text-zinc-100">
+                          {record.cost.toLocaleString()}원
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                          <span
+                            className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusBadge(record.status)}`}
+                          >
+                            {record.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {records.length === 0 && (
+                <div className="px-6 py-12 text-center">
+                  <p className="text-zinc-500 dark:text-zinc-400">
+                    {selectedShopId
+                      ? "조회된 내역이 없습니다."
+                      : "매장을 선택해주세요."}
+                  </p>
+                </div>
+              )}
+            </>
           )}
         </div>
       </main>
