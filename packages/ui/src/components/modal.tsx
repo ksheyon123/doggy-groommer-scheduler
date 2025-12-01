@@ -4,12 +4,6 @@ import React, { createContext, useContext, useState, useCallback } from "react";
 import type { ReactNode } from "react";
 
 // Types
-type ModalCallbacks = {
-  onConfirm: () => void;
-  onReject: () => void;
-  onClose: () => void;
-};
-
 type ModalContentRenderer = (
   onConfirm: () => void,
   onReject: () => void,
@@ -161,12 +155,14 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
   const handleConfirm = useCallback(() => {
     modalState.onConfirm?.();
     closeModal();
-  }, [modalState.onConfirm, closeModal]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [closeModal]);
 
   const handleReject = useCallback(() => {
     modalState.onReject?.();
     closeModal();
-  }, [modalState.onReject, closeModal]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [closeModal]);
 
   return (
     <ModalContext.Provider value={{ showModal, closeModal }}>

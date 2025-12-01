@@ -40,7 +40,7 @@ export const generateTokens = (payload: TokenPayload): TokenResponse => {
 export const verifyAccessToken = (token: string): TokenPayload | null => {
   try {
     return jwt.verify(token, ACCESS_TOKEN_SECRET) as TokenPayload;
-  } catch (error) {
+  } catch {
     return null;
   }
 };
@@ -48,7 +48,7 @@ export const verifyAccessToken = (token: string): TokenPayload | null => {
 export const verifyRefreshToken = (token: string): TokenPayload | null => {
   try {
     return jwt.verify(token, REFRESH_TOKEN_SECRET) as TokenPayload;
-  } catch (error) {
+  } catch {
     return null;
   }
 };

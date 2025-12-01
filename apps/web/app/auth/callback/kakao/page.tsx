@@ -11,14 +11,14 @@ function KakaoCallbackContent() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const code = searchParams.get("code");
-
-    if (!code) {
-      setError("인증 코드가 없습니다.");
-      return;
-    }
-
     const handleCallback = async () => {
+      const code = searchParams.get("code");
+
+      if (!code) {
+        setError("인증 코드가 없습니다.");
+        return;
+      }
+
       try {
         const redirectUri = `${window.location.origin}/auth/callback/kakao`;
         const result = await handleKakaoCallback(code, redirectUri);

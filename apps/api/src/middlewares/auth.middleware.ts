@@ -2,7 +2,9 @@ import { Request, Response, NextFunction } from "express";
 import { verifyAccessToken, TokenPayload } from "../utils/jwt";
 
 // Request 타입 확장
+// eslint-disable-next-line @typescript-eslint/no-namespace
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       user?: TokenPayload;
@@ -69,7 +71,7 @@ export const optionalAuthMiddleware = (
     }
 
     next();
-  } catch (error) {
+  } catch {
     next();
   }
 };

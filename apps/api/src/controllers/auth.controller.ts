@@ -366,7 +366,7 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
 export const getMe = async (req: Request, res: Response): Promise<void> => {
   try {
     // 이 엔드포인트는 authMiddleware를 통과해야 함
-    const userId = (req as any).user?.userId;
+    const userId = req.user?.userId;
 
     if (!userId) {
       res.status(401).json({ error: "Unauthorized" });
