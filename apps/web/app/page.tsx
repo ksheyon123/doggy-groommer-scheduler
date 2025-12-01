@@ -46,7 +46,7 @@ interface ApiAppointment {
   start_time: string;
   end_time: string;
   status: string;
-  Dog?: {
+  dog?: {
     id: number;
     name: string;
     breed: string;
@@ -61,7 +61,7 @@ interface ApiAppointment {
     name: string;
     email: string;
   };
-  Shop?: {
+  shop?: {
     id: number;
     name: string;
   };
@@ -354,7 +354,7 @@ export default function Home() {
         groomerId: assignedUserId,
         startTime: formatTime(apt.start_time),
         endTime: formatTime(apt.end_time),
-        dogName: apt.Dog?.name || "이름 없음",
+        dogName: apt.dog?.name || "이름 없음",
         serviceName: apt.grooming_type || "미용",
       };
     });
@@ -376,7 +376,7 @@ export default function Home() {
       date: new Date(year, month - 1, day), // 로컬 시간으로 생성
       startTime: formatTime(apt.start_time),
       endTime: formatTime(apt.end_time),
-      dogName: apt.Dog?.name || "이름 없음",
+      dogName: apt.dog?.name || "이름 없음",
       serviceName: apt.grooming_type || "미용",
       color:
         groomerIndex >= 0
@@ -596,8 +596,8 @@ export default function Home() {
     setEditAppointmentData({
       id: apiAppointment.id,
       dog_id: apiAppointment.dog_id,
-      dogName: apiAppointment.Dog?.name || "",
-      dogBreed: apiAppointment.Dog?.breed,
+      dogName: apiAppointment.dog?.name || "",
+      dogBreed: apiAppointment.dog?.breed,
       ownerName: undefined, // Dog 모델에 owner_name이 없으므로 undefined
       assigned_user_id: apiAppointment.assigned_user_id || null,
       appointment_at: apiAppointment.appointment_at,
@@ -611,6 +611,7 @@ export default function Home() {
 
   // 예약 클릭 시 수정 모달 열기 (Daily View)
   const handleDailyAppointmentClick = (appointment: DailyAppointment) => {
+    console.log(appointment);
     // 원본 API 데이터에서 해당 예약 찾기
     const apiAppointment = appointments.find(
       (apt) => apt.id === appointment.id
@@ -621,8 +622,8 @@ export default function Home() {
     setEditAppointmentData({
       id: apiAppointment.id,
       dog_id: apiAppointment.dog_id,
-      dogName: apiAppointment.Dog?.name || "",
-      dogBreed: apiAppointment.Dog?.breed,
+      dogName: apiAppointment.dog?.name || "",
+      dogBreed: apiAppointment.dog?.breed,
       ownerName: undefined,
       assigned_user_id: apiAppointment.assigned_user_id || null,
       appointment_at: apiAppointment.appointment_at,
