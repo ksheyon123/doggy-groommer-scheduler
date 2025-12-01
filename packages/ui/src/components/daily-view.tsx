@@ -28,10 +28,10 @@ export interface DailyViewProps {
   onBackToWeekly?: () => void;
 }
 
-// 시간 슬롯 생성 (09:00 ~ 18:00)
-const timeSlots = Array.from({ length: 19 }, (_, i) => {
-  const hour = Math.floor(i / 2) + 9;
-  const minute = (i % 2) * 30;
+// 시간 슬롯 생성 (09:00 ~ 18:00, 15분 단위)
+const timeSlots = Array.from({ length: 37 }, (_, i) => {
+  const hour = Math.floor(i / 4) + 9;
+  const minute = (i % 4) * 15;
   return `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
 });
 
@@ -53,29 +53,37 @@ export function DailyView({
     return hour * 60 + minute;
   };
 
-  // 예약이 특정 시간 슬롯에 해당하는지 확인
+  // 예약이 특정 시간 슬롯에 해당하는지 확인 (슬롯 범위와 예약 범위가 겹치는지)
   const getAppointmentForSlot = (groomerId: number, time: string) => {
-    const slotMinutes = timeToMinutes(time);
+    const slotStartMinutes = timeToMinutes(time);
+    const slotEndMinutes = slotStartMinutes + 15;
     return appointments.find((apt) => {
       if (apt.groomerId !== groomerId) return false;
       const startMinutes = timeToMinutes(apt.startTime);
       const endMinutes = timeToMinutes(apt.endTime);
-      return slotMinutes >= startMinutes && slotMinutes < endMinutes;
+      // 슬롯 범위와 예약 범위가 겹치는지 확인
+      return startMinutes < slotEndMinutes && endMinutes > slotStartMinutes;
     });
   };
 
-  // 예약 시작 슬롯인지 확인
+  // 예약 시작 슬롯인지 확인 (예약 시작 시간을 포함하는 첫 번째 슬롯)
   const isAppointmentStart = (groomerId: number, time: string) => {
-    return appointments.some(
-      (apt) => apt.groomerId === groomerId && apt.startTime === time
-    );
+    const slotMinutes = timeToMinutes(time);
+    const nextSlotMinutes = slotMinutes + 15;
+
+    return appointments.some((apt) => {
+      if (apt.groomerId !== groomerId) return false;
+      const startMinutes = timeToMinutes(apt.startTime);
+      // 예약 시작 시간이 현재 슬롯 범위 내에 있으면 시작으로 간주
+      return startMinutes >= slotMinutes && startMinutes < nextSlotMinutes;
+    });
   };
 
-  // 예약의 슬롯 수 계산
+  // 예약의 슬롯 수 계산 (15분 단위)
   const getAppointmentSlotCount = (appointment: Appointment) => {
     const startMinutes = timeToMinutes(appointment.startTime);
     const endMinutes = timeToMinutes(appointment.endTime);
-    return Math.ceil((endMinutes - startMinutes) / 30);
+    return Math.ceil((endMinutes - startMinutes) / 15);
   };
 
   const formatDate = (date: Date) => {
@@ -173,7 +181,7 @@ export function DailyView({
             {timeSlots.map((time) => (
               <div
                 key={time}
-                className="grid min-h-[48px]"
+                className="grid min-h-[32px]"
                 style={{
                   gridTemplateColumns: `80px repeat(${gridColCount}, 1fr)`,
                 }}
