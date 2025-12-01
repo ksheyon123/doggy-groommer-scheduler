@@ -1,7 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
-
 // 미용선생님 타입
 export interface Groomer {
   id: number;

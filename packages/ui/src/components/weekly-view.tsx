@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 
 // 예약 타입
 export interface WeeklyAppointment {

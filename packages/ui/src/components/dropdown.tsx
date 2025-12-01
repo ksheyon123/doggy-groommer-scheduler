@@ -13,7 +13,7 @@ import type {
   DropdownMenuProps,
   DropdownItemProps,
 } from "@heroui/react";
-import type { Key, ReactNode } from "react";
+import type { Key } from "react";
 
 // 기본 컴포넌트 re-export
 export function Dropdown(props: DropdownProps) {

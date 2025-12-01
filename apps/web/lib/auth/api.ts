@@ -85,7 +85,7 @@ async function refreshTokens(): Promise<boolean> {
 
     clearTokens();
     return false;
-  } catch (error) {
+  } catch {
     clearTokens();
     return false;
   }
@@ -166,7 +166,7 @@ export async function getCurrentUser(): Promise<User | null> {
 
     const data = await response.json();
     return data.user;
-  } catch (error) {
+  } catch {
     return null;
   }
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Calendar,
   DailyView,
   WeeklyView,
   MonthlyView,
@@ -26,14 +25,6 @@ import { useShop } from "@/lib/shop";
 
 // API 기본 URL
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-
-// Shop 타입
-interface Shop {
-  id: number;
-  name: string;
-  address?: string;
-  phone?: string;
-}
 
 // API에서 받아온 예약 데이터 타입
 interface ApiAppointment {
@@ -224,12 +215,19 @@ export default function Home() {
 
         if (response.ok && data.success) {
           // Employee 데이터를 GroomerItem 형태로 변환
-          const groomerList: GroomerItem[] = data.data.map((emp: any) => ({
-            id: emp.id,
-            user_id: emp.user_id,
-            name: emp.user?.name || "이름 없음",
-            role: emp.role,
-          }));
+          const groomerList: GroomerItem[] = data.data.map(
+            (emp: {
+              id: number;
+              user_id: number;
+              user?: { name?: string };
+              role: string;
+            }) => ({
+              id: emp.id,
+              user_id: emp.user_id,
+              name: emp.user?.name || "이름 없음",
+              role: emp.role,
+            })
+          );
           setGroomers(groomerList);
         }
       } catch (error) {

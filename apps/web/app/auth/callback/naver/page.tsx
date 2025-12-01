@@ -11,22 +11,22 @@ export default function NaverCallbackPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const code = searchParams.get("code");
-    const state = searchParams.get("state");
-
-    if (!code) {
-      setError("인증 코드가 없습니다.");
-      return;
-    }
-
-    // state 검증 (CSRF 방지)
-    const savedState = sessionStorage.getItem("naver_oauth_state");
-    if (state !== savedState) {
-      setError("보안 검증에 실패했습니다.");
-      return;
-    }
-
     const handleCallback = async () => {
+      const code = searchParams.get("code");
+      const state = searchParams.get("state");
+
+      if (!code) {
+        setError("인증 코드가 없습니다.");
+        return;
+      }
+
+      // state 검증 (CSRF 방지)
+      const savedState = sessionStorage.getItem("naver_oauth_state");
+      if (state !== savedState) {
+        setError("보안 검증에 실패했습니다.");
+        return;
+      }
+
       try {
         const redirectUri = `${window.location.origin}/auth/callback/naver`;
         const result = await handleNaverCallback(
