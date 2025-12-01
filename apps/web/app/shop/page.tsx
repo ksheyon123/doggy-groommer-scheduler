@@ -260,7 +260,6 @@ export default function ShopManagementPage() {
     }
   };
 
-  console.log(records);
   // 정산 합계 계산
   const totalAmount = records.reduce((sum, record) => sum + record.cost, 0);
   const completedAmount = records
