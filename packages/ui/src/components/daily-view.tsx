@@ -95,7 +95,7 @@ export function DailyView({
   };
 
   return (
-    <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-800 overflow-hidden">
+    <div className="max-h-[calc(100vh-150px)] flex flex-col bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-800 overflow-hidden">
       {/* 날짜 헤더 */}
       <div className="px-6 py-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -148,7 +148,7 @@ export function DailyView({
       </div>
 
       {/* 미용선생님 + 시간대 그리드 */}
-      <div className="overflow-x-auto overflow-y-auto max-h-[600px]">
+      <div className="flex-1 overflow-x-auto overflow-y-auto">
         <div className="min-w-[800px]">
           {/* 미용선생님 헤더 */}
           <div

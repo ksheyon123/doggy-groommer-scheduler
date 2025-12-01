@@ -143,7 +143,7 @@ export function WeeklyView({
 
   return (
     <div
-      className={`w-full bg-white dark:bg-zinc-900 rounded-lg shadow-lg ${className}`}
+      className={`max-h-[calc(100vh-150px)] flex flex-col w-full bg-white dark:bg-zinc-900 rounded-lg shadow-lg ${className}`}
     >
       {/* 헤더 */}
       <div className="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-800">
@@ -201,7 +201,7 @@ export function WeeklyView({
       </div>
 
       {/* 캘린더 그리드 */}
-      <div className="overflow-auto max-h-[600px]">
+      <div className="flex-1 overflow-auto">
         <div className="min-w-[800px]">
           {/* 요일 헤더 */}
           <div className="grid grid-cols-8 border-b border-zinc-200 dark:border-zinc-800 sticky top-0 bg-white dark:bg-zinc-900 z-20">

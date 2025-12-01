@@ -121,7 +121,6 @@ export const googleCallback = async (
 ): Promise<void> => {
   try {
     const { code, redirect_uri } = req.body;
-    console.log(code, redirect_uri);
 
     if (!code) {
       res.status(400).json({ error: "Authorization code is required" });
