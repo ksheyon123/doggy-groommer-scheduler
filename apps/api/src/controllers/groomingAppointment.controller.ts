@@ -24,6 +24,11 @@ export const getAllAppointments = async (req: Request, res: Response) => {
           attributes: ["id", "name", "email"],
         },
         {
+          model: User,
+          as: "assignedUser",
+          attributes: ["id", "name", "email"],
+        },
+        {
           model: Dog,
           attributes: ["id", "name", "breed"],
         },
@@ -58,6 +63,11 @@ export const getAppointmentById = async (req: Request, res: Response) => {
         {
           model: User,
           as: "createdByUser",
+          attributes: ["id", "name", "email"],
+        },
+        {
+          model: User,
+          as: "assignedUser",
           attributes: ["id", "name", "email"],
         },
         {
@@ -108,6 +118,7 @@ export const createAppointment = async (req: Request, res: Response) => {
       shop_id,
       dog_id,
       created_by_user_id,
+      assigned_user_id,
       grooming_type,
       memo,
       amount,
@@ -168,6 +179,7 @@ export const createAppointment = async (req: Request, res: Response) => {
       shop_id,
       dog_id,
       created_by_user_id,
+      assigned_user_id,
       grooming_type,
       memo,
       amount,
@@ -188,6 +200,11 @@ export const createAppointment = async (req: Request, res: Response) => {
           {
             model: User,
             as: "createdByUser",
+            attributes: ["id", "name", "email"],
+          },
+          {
+            model: User,
+            as: "assignedUser",
             attributes: ["id", "name", "email"],
           },
           {
@@ -217,6 +234,7 @@ export const updateAppointment = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const {
+      assigned_user_id,
       grooming_type,
       memo,
       amount,
@@ -236,6 +254,8 @@ export const updateAppointment = async (req: Request, res: Response) => {
     }
 
     // 업데이트할 필드만 설정
+    if (assigned_user_id !== undefined)
+      appointment.assigned_user_id = assigned_user_id;
     if (grooming_type !== undefined) appointment.grooming_type = grooming_type;
     if (memo !== undefined) appointment.memo = memo;
     if (amount !== undefined) appointment.amount = amount;
@@ -256,6 +276,11 @@ export const updateAppointment = async (req: Request, res: Response) => {
         {
           model: User,
           as: "createdByUser",
+          attributes: ["id", "name", "email"],
+        },
+        {
+          model: User,
+          as: "assignedUser",
           attributes: ["id", "name", "email"],
         },
         {
@@ -326,6 +351,11 @@ export const getAppointmentsByShopId = async (req: Request, res: Response) => {
           attributes: ["id", "name", "email"],
         },
         {
+          model: User,
+          as: "assignedUser",
+          attributes: ["id", "name", "email"],
+        },
+        {
           model: Dog,
           attributes: ["id", "name", "breed"],
         },
@@ -361,6 +391,11 @@ export const getAppointmentsByDogId = async (req: Request, res: Response) => {
         {
           model: User,
           as: "createdByUser",
+          attributes: ["id", "name", "email"],
+        },
+        {
+          model: User,
+          as: "assignedUser",
           attributes: ["id", "name", "email"],
         },
         {
@@ -402,6 +437,11 @@ export const getAppointmentsByCreatedByUserId = async (
         {
           model: User,
           as: "createdByUser",
+          attributes: ["id", "name", "email"],
+        },
+        {
+          model: User,
+          as: "assignedUser",
           attributes: ["id", "name", "email"],
         },
         {
