@@ -24,7 +24,6 @@ export function InputDropdown({
   value,
   onChange,
   className = "",
-  label,
 }: InputDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
