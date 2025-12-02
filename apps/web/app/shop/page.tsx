@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth, getAccessToken } from "@/lib/auth";
 import { useShop } from "@/lib/shop";
 import { useRouter } from "next/navigation";
-import { Paginator } from "@repo/ui";
+import { Paginator, ShopRegisterModal, type ShopRegisterData } from "@repo/ui";
 
 // 매장 타입
 interface Shop {
@@ -146,8 +146,6 @@ export default function ShopManagementPage() {
   const [pagination, setPagination] = useState<PaginationInfo | null>(null);
   const ITEMS_PER_PAGE = 10;
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
-  const [shopName, setShopName] = useState("");
-  const [isRegistering, setIsRegistering] = useState(false);
   const [alertModal, setAlertModal] = useState<{
     isOpen: boolean;
     title: string;
@@ -192,46 +190,30 @@ export default function ShopManagementPage() {
   };
 
   // 매장 등록
-  const handleRegisterShop = async () => {
-    if (!shopName.trim()) {
-      showAlert("알림", "매장명을 입력해주세요.");
-      return;
-    }
-
+  const handleRegisterShop = async (data: ShopRegisterData): Promise<void> => {
     const accessToken = getAccessToken();
     if (!accessToken) {
-      showAlert("알림", "로그인이 필요합니다.");
-      return;
+      throw new Error("로그인이 필요합니다.");
     }
 
-    setIsRegistering(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/shops`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({ name: shopName.trim() }),
-      });
+    const response = await fetch(`${API_BASE_URL}/api/shops`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({ name: data.name.trim() }),
+    });
 
-      const data = await response.json();
+    const result = await response.json();
 
-      if (response.ok && data.success) {
-        setShopName("");
-        setIsRegisterModalOpen(false);
-        showAlert("알림", "등록되었습니다.");
-        // 매장 목록 새로고침
-        refreshShops();
-      } else {
-        showAlert("알림", data.message || "매장 등록에 실패했습니다.");
-      }
-    } catch (error) {
-      console.error("매장 등록 실패:", error);
-      showAlert("알림", "매장 등록 중 오류가 발생했습니다.");
-    } finally {
-      setIsRegistering(false);
+    if (!response.ok || !result.success) {
+      throw new Error(result.message || "매장 등록에 실패했습니다.");
     }
+
+    showAlert("알림", "등록되었습니다.");
+    // 매장 목록 새로고침
+    await refreshShops();
   };
 
   // 예약 내역 조회
@@ -372,101 +354,11 @@ export default function ShopManagementPage() {
       )}
 
       {/* 매장 등록 모달 */}
-      {isRegisterModalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setIsRegisterModalOpen(false);
-          }}
-        >
-          <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            {/* 모달 헤더 */}
-            <div className="px-6 py-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-                매장 등록
-              </h3>
-              <button
-                onClick={() => setIsRegisterModalOpen(false)}
-                className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
-              >
-                <svg
-                  className="w-5 h-5 text-zinc-500"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
-
-            {/* 모달 본문 */}
-            <div className="px-6 py-6">
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-                매장명
-              </label>
-              <input
-                type="text"
-                value={shopName}
-                onChange={(e) => setShopName(e.target.value)}
-                placeholder="매장명을 입력하세요"
-                className="w-full px-4 py-3 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleRegisterShop();
-                }}
-                autoFocus
-              />
-            </div>
-
-            {/* 모달 푸터 */}
-            <div className="px-6 py-4 bg-zinc-50 dark:bg-zinc-800/50 border-t border-zinc-200 dark:border-zinc-800 flex justify-end gap-3">
-              <button
-                onClick={() => setIsRegisterModalOpen(false)}
-                className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-200 dark:bg-zinc-700 rounded-lg hover:bg-zinc-300 dark:hover:bg-zinc-600 transition-colors"
-              >
-                취소
-              </button>
-              <button
-                onClick={handleRegisterShop}
-                disabled={isRegistering || !shopName.trim()}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-              >
-                {isRegistering ? (
-                  <>
-                    <svg
-                      className="animate-spin w-4 h-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      />
-                    </svg>
-                    등록 중...
-                  </>
-                ) : (
-                  "등록"
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ShopRegisterModal
+        isOpen={isRegisterModalOpen}
+        onClose={() => setIsRegisterModalOpen(false)}
+        onSubmit={handleRegisterShop}
+      />
 
       {/* 헤더 */}
       <header className="bg-white dark:bg-zinc-900 shadow-sm border-b border-zinc-200 dark:border-zinc-800">

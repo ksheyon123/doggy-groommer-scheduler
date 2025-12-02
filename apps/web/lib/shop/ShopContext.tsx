@@ -42,7 +42,7 @@ interface ShopProviderProps {
 export function ShopProvider({ children }: ShopProviderProps) {
   const [shops, setShops] = useState<Shop[]>([]);
   const [selectedShop, setSelectedShop] = useState<Shop | null>(null);
-  const [isLoadingShops, setIsLoadingShops] = useState(false);
+  const [isLoadingShops, setIsLoadingShops] = useState(true);
   const selectedShopRef = useRef<Shop | null>(null);
 
   // selectedShop이 변경될 때 ref도 업데이트

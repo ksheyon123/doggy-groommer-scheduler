@@ -18,7 +18,10 @@ export const getAllShops = async (req: Request, res: Response) => {
 
     // Employee 테이블에서 사용자가 속한 샵 조회
     const employees = await Employee.findAll({
-      where: { user_id: userId },
+      where: {
+        user_id: userId,
+        is_active: true, // 활성화된 직원만 조회
+      },
       include: [
         {
           model: Shop,

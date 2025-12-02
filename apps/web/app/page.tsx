@@ -8,12 +8,14 @@ import {
   ViewModeDropdown,
   LoginModal,
   AppointmentFormModal,
+  ShopRegisterModal,
   type ViewMode,
   type DogSearchItem,
   type AppointmentFormData,
   type GroomingTypeItem,
   type GroomerItem,
   type DogRegisterData,
+  type ShopRegisterData,
   type Groomer as DailyGroomer,
   type Appointment as DailyAppointment,
   type WeeklyAppointment,
@@ -87,9 +89,11 @@ export default function Home() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [isShopDropdownOpen, setIsShopDropdownOpen] = useState(false);
+  const [isShopRegisterModalOpen, setIsShopRegisterModalOpen] = useState(false);
 
   // 전역 샵 상태 사용
-  const { shops, selectedShop, setSelectedShop, refreshShops } = useShop();
+  const { shops, selectedShop, setSelectedShop, refreshShops, isLoadingShops } =
+    useShop();
 
   // 예약 모달 상태
   const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false);
@@ -164,6 +168,39 @@ export default function Home() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]);
+
+  // 로그인했지만 매장이 없을 때 강제로 매장 등록 모달 표시
+  useEffect(() => {
+    if (isAuthenticated && !isLoadingShops && shops.length === 0) {
+      setIsShopRegisterModalOpen(true);
+    }
+  }, [isAuthenticated, isLoadingShops, shops]);
+
+  // 매장 등록 핸들러
+  const handleRegisterShop = async (data: ShopRegisterData): Promise<void> => {
+    const accessToken = getAccessToken();
+    if (!accessToken) {
+      throw new Error("로그인이 필요합니다.");
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/shops`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({ name: data.name.trim() }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      throw new Error(result.message || "매장 등록에 실패했습니다.");
+    }
+
+    // 매장 목록 새로고침
+    await refreshShops();
+  };
 
   // 미용 종류 가져오기 (함수 분리)
   const fetchGroomingTypes = async () => {
@@ -718,6 +755,14 @@ export default function Home() {
         groomerName={selectedGroomer?.name}
         editMode={isEditMode}
         editData={editAppointmentData || undefined}
+      />
+
+      {/* 매장 등록 모달 (매장이 없을 때 강제 표시) */}
+      <ShopRegisterModal
+        isOpen={isShopRegisterModalOpen}
+        onClose={() => setIsShopRegisterModalOpen(false)}
+        onSubmit={handleRegisterShop}
+        isRequired={shops.length === 0 && isAuthenticated}
       />
 
       {/* 헤더 */}
