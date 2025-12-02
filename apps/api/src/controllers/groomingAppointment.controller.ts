@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { Op } from "sequelize";
 import { GroomingAppointment } from "../models/GroomingAppointment";
+import { GroomingType } from "../models/GroomingType";
 import { Dog } from "../models/Dog";
 import { User } from "../models/User";
 import { Shop } from "../models/Shop";
@@ -176,6 +177,21 @@ export const createAppointment = async (req: Request, res: Response) => {
       });
     }
 
+    // grooming_type이 있으면 GroomingType 테이블에 추가 (없을 경우에만)
+    if (grooming_type && grooming_type.trim()) {
+      await GroomingType.findOrCreate({
+        where: {
+          shop_id: shop_id,
+          name: grooming_type.trim(),
+        },
+        defaults: {
+          shop_id: shop_id,
+          name: grooming_type.trim(),
+          description: null,
+        },
+      });
+    }
+
     const newAppointment = await GroomingAppointment.create({
       shop_id,
       dog_id,
@@ -251,6 +267,21 @@ export const updateAppointment = async (req: Request, res: Response) => {
       return res.status(404).json({
         success: false,
         message: "예약을 찾을 수 없습니다.",
+      });
+    }
+
+    // grooming_type이 있으면 GroomingType 테이블에 추가 (없을 경우에만)
+    if (grooming_type && grooming_type.trim()) {
+      await GroomingType.findOrCreate({
+        where: {
+          shop_id: appointment.shop_id,
+          name: grooming_type.trim(),
+        },
+        defaults: {
+          shop_id: appointment.shop_id,
+          name: grooming_type.trim(),
+          description: null,
+        },
       });
     }
 

@@ -164,33 +164,34 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]);
 
-  // 미용 종류 가져오기
-  useEffect(() => {
-    const fetchGroomingTypes = async () => {
-      if (!selectedShop) return;
+  // 미용 종류 가져오기 (함수 분리)
+  const fetchGroomingTypes = async () => {
+    if (!selectedShop) return;
 
-      const accessToken = getAccessToken();
-      if (!accessToken) return;
+    const accessToken = getAccessToken();
+    if (!accessToken) return;
 
-      try {
-        const response = await fetch(
-          `${API_BASE_URL}/api/shops/${selectedShop.id}/grooming-types`,
-          {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-            },
-          }
-        );
-        const data = await response.json();
-
-        if (response.ok && data.success) {
-          setGroomingTypes(data.data);
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/shops/${selectedShop.id}/grooming-types`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
         }
-      } catch (error) {
-        console.error("미용 종류 조회 실패:", error);
-      }
-    };
+      );
+      const data = await response.json();
 
+      if (response.ok && data.success) {
+        setGroomingTypes(data.data);
+      }
+    } catch (error) {
+      console.error("미용 종류 조회 실패:", error);
+    }
+  };
+
+  // selectedShop 변경 시 미용 종류 가져오기
+  useEffect(() => {
     fetchGroomingTypes();
   }, [selectedShop]);
 
@@ -557,8 +558,9 @@ export default function Home() {
         throw new Error(data.message || "예약 수정에 실패했습니다.");
       }
 
-      // 예약 목록 새로고침
+      // 예약 목록 및 미용종류 목록 새로고침
       await refreshAppointments();
+      await fetchGroomingTypes();
       return;
     }
 
@@ -589,8 +591,9 @@ export default function Home() {
       throw new Error(data.message || "예약 등록에 실패했습니다.");
     }
 
-    // 예약 목록 새로고침
+    // 예약 목록 및 미용종류 목록 새로고침
     await refreshAppointments();
+    await fetchGroomingTypes();
   };
 
   // 예약 삭제 API

@@ -10,6 +10,7 @@ import {
   SelectItem,
 } from "@heroui/react";
 import { SearchDropdown } from "./search-dropdown";
+import { InputDropdown } from "./input-dropdown";
 import type { DogSearchItem } from "./search-dropdown";
 
 export interface GroomingTypeItem {
@@ -106,6 +107,12 @@ export function AppointmentFormModal({
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedDog, setSelectedDog] = useState<DogSearchItem | null>(null);
+  const [errors, setErrors] = useState<{
+    dog?: string;
+    appointment_at?: string;
+    start_time?: string;
+  }>({});
+  const [searchKey, setSearchKey] = useState(0);
 
   // 강아지 등록 모달 상태
   const [isDogRegisterOpen, setIsDogRegisterOpen] = useState(false);
@@ -170,6 +177,8 @@ export function AppointmentFormModal({
       });
       setSelectedDog(null);
       setIsDogRegisterOpen(false);
+      setErrors({});
+      setSearchKey((prev) => prev + 1);
     }
   }, [isOpen]);
 
@@ -200,6 +209,10 @@ export function AppointmentFormModal({
       dog_id: dog.id,
       dogName: dog.name,
     }));
+    // 강아지 선택 시 에러 초기화
+    if (errors.dog) {
+      setErrors((prev) => ({ ...prev, dog: undefined }));
+    }
   };
 
   const handleInputChange = (
@@ -215,16 +228,28 @@ export function AppointmentFormModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // 유효성 검사
+    const newErrors: typeof errors = {};
+
     if (!formData.dog_id) {
-      alert("강아지를 선택해주세요.");
+      newErrors.dog =
+        "목록에서 강아지를 선택해주세요. 목록에 나타나지 않을 시, 등록해 주세요.";
+    }
+
+    if (!formData.appointment_at) {
+      newErrors.appointment_at = "예약 날짜를 선택해주세요.";
+    }
+
+    if (!formData.start_time) {
+      newErrors.start_time = "시작 시간을 입력해주세요.";
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
 
-    if (!formData.appointment_at || !formData.start_time) {
-      alert("날짜와 시작 시간을 입력해주세요.");
-      return;
-    }
-
+    setErrors({});
     setIsSubmitting(true);
     try {
       await onSubmit(formData);
@@ -351,10 +376,31 @@ export function AppointmentFormModal({
               </div>
               {!editMode && (
                 <SearchDropdown
+                  key={searchKey}
                   placeholder="강아지 이름으로 검색..."
                   onSearch={onSearchDog}
                   onSelect={handleDogSelect}
                 />
+              )}
+              {errors.dog && !selectedDog && (
+                <div className="mt-2 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                  <p className="text-sm text-red-600 dark:text-red-400 flex items-center gap-2">
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                    {errors.dog}
+                  </p>
+                </div>
               )}
               {selectedDog && (
                 <div
@@ -482,14 +528,24 @@ export function AppointmentFormModal({
               <Input
                 type="date"
                 value={formData.appointment_at}
-                onChange={(e) =>
-                  handleInputChange("appointment_at", e.target.value)
-                }
+                onChange={(e) => {
+                  handleInputChange("appointment_at", e.target.value);
+                  if (errors.appointment_at) {
+                    setErrors((prev) => ({
+                      ...prev,
+                      appointment_at: undefined,
+                    }));
+                  }
+                }}
                 classNames={{
-                  inputWrapper:
-                    "bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700",
+                  inputWrapper: `bg-white dark:bg-zinc-800 border ${errors.appointment_at ? "border-red-500" : "border-zinc-200 dark:border-zinc-700"}`,
                 }}
               />
+              {errors.appointment_at && (
+                <p className="mt-1 text-sm text-red-500">
+                  {errors.appointment_at}
+                </p>
+              )}
             </div>
 
             {/* 시간 */}
@@ -503,15 +559,23 @@ export function AppointmentFormModal({
                   value={formData.start_time}
                   min="06:00"
                   max="22:00"
-                  onChange={(e) =>
-                    handleInputChange("start_time", e.target.value)
-                  }
+                  onChange={(e) => {
+                    handleInputChange("start_time", e.target.value);
+                    if (errors.start_time) {
+                      setErrors((prev) => ({ ...prev, start_time: undefined }));
+                    }
+                  }}
                   classNames={{
-                    inputWrapper:
-                      "bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700",
+                    inputWrapper: `bg-white dark:bg-zinc-800 border ${errors.start_time ? "border-red-500" : "border-zinc-200 dark:border-zinc-700"}`,
                   }}
                 />
-                <p className="text-xs text-zinc-500 mt-1">06:00 ~ 22:00</p>
+                {errors.start_time ? (
+                  <p className="mt-1 text-sm text-red-500">
+                    {errors.start_time}
+                  </p>
+                ) : (
+                  <p className="text-xs text-zinc-500 mt-1">06:00 ~ 22:00</p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
@@ -539,48 +603,12 @@ export function AppointmentFormModal({
               <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
                 미용 종류
               </label>
-              {groomingTypes.length > 0 ? (
-                <Select
-                  placeholder="미용 종류를 선택하세요"
-                  selectedKeys={
-                    formData.grooming_type ? [formData.grooming_type] : []
-                  }
-                  onSelectionChange={(keys) => {
-                    const selected = Array.from(keys)[0] as string;
-                    handleInputChange("grooming_type", selected || "");
-                  }}
-                  classNames={{
-                    trigger:
-                      "bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700",
-                  }}
-                >
-                  {groomingTypes.map((type) => (
-                    <SelectItem key={type.name} textValue={type.name}>
-                      <div className="flex flex-col">
-                        <span className="text-sm">{type.name}</span>
-                        {type.description && (
-                          <span className="text-xs text-zinc-500">
-                            {type.description}
-                          </span>
-                        )}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </Select>
-              ) : (
-                <Input
-                  type="text"
-                  placeholder="예: 전체 미용, 부분 미용, 목욕..."
-                  value={formData.grooming_type}
-                  onChange={(e) =>
-                    handleInputChange("grooming_type", e.target.value)
-                  }
-                  classNames={{
-                    inputWrapper:
-                      "bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700",
-                  }}
-                />
-              )}
+              <InputDropdown
+                placeholder="예: 전체 미용, 부분 미용, 목욕..."
+                items={groomingTypes}
+                value={formData.grooming_type}
+                onChange={(value) => handleInputChange("grooming_type", value)}
+              />
             </div>
 
             {/* 금액 */}
@@ -653,7 +681,7 @@ export function AppointmentFormModal({
               <Button
                 type="submit"
                 color="primary"
-                disabled={isSubmitting || isDeleting || !formData.dog_id}
+                disabled={isSubmitting || isDeleting}
               >
                 {isSubmitting ? (
                   <Spinner size="sm" />

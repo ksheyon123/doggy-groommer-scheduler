@@ -13,5 +13,6 @@ export * from "./components/yearly-view";
 export * from "./components/modal";
 export * from "./components/login-modal";
 export * from "./components/search-dropdown";
+export * from "./components/input-dropdown";
 export * from "./components/appointment-form-modal";
 export * from "./components/paginator";
