@@ -9,7 +9,9 @@ export const getAllDogs = async (req: Request, res: Response) => {
   try {
     const { shopId } = req.query;
 
-    const whereClause = shopId ? { shop_id: shopId } : {};
+    const whereClause = shopId
+      ? { shop_id: shopId, is_deleted: false }
+      : { is_deleted: false };
 
     const dogs = await Dog.findAll({
       where: whereClause,
@@ -40,7 +42,8 @@ export const getDogById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    const dog = await Dog.findByPk(id, {
+    const dog = await Dog.findOne({
+      where: { id, is_deleted: false },
       include: [
         {
           model: Shop,
@@ -74,7 +77,8 @@ export const getDogWithAppointments = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    const dog = await Dog.findByPk(id, {
+    const dog = await Dog.findOne({
+      where: { id, is_deleted: false },
       include: [
         {
           model: Shop,
@@ -126,7 +130,7 @@ export const getDogsByShopId = async (req: Request, res: Response) => {
     const offset = (pageNum - 1) * limitNum;
 
     const { count, rows: dogs } = await Dog.findAndCountAll({
-      where: { shop_id: shopId },
+      where: { shop_id: shopId, is_deleted: false },
       include: [
         {
           model: Shop,
@@ -186,6 +190,7 @@ export const searchDogsByName = async (req: Request, res: Response) => {
         name: {
           [Op.like]: `%${name}%`,
         },
+        is_deleted: false,
       },
       attributes: ["id", "name", "owner_name", "breed"],
       order: [["name", "ASC"]],
@@ -208,8 +213,16 @@ export const searchDogsByName = async (req: Request, res: Response) => {
 // 새 강아지 등록
 export const createDog = async (req: Request, res: Response) => {
   try {
-    const { shop_id, name, breed, owner_name, owner_phone_number, note } =
-      req.body;
+    const {
+      shop_id,
+      name,
+      breed,
+      owner_name,
+      owner_phone_number,
+      note,
+      weight,
+      age_months,
+    } = req.body;
 
     // 필수 필드 검증
     if (!shop_id || !name) {
@@ -235,6 +248,8 @@ export const createDog = async (req: Request, res: Response) => {
       owner_name,
       owner_phone_number,
       note,
+      weight,
+      age_months,
     });
 
     const dogWithDetails = await Dog.findByPk(newDog.id, {
@@ -264,7 +279,15 @@ export const createDog = async (req: Request, res: Response) => {
 export const updateDog = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, breed, owner_name, owner_phone_number, note } = req.body;
+    const {
+      name,
+      breed,
+      owner_name,
+      owner_phone_number,
+      note,
+      weight,
+      age_months,
+    } = req.body;
 
     const dog = await Dog.findByPk(id);
 
@@ -282,6 +305,8 @@ export const updateDog = async (req: Request, res: Response) => {
     if (owner_phone_number !== undefined)
       dog.owner_phone_number = owner_phone_number;
     if (note !== undefined) dog.note = note;
+    if (weight !== undefined) dog.weight = weight;
+    if (age_months !== undefined) dog.age_months = age_months;
 
     await dog.save();
 
@@ -308,7 +333,7 @@ export const updateDog = async (req: Request, res: Response) => {
   }
 };
 
-// 강아지 삭제
+// 강아지 삭제 (Soft Delete)
 export const deleteDog = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -322,20 +347,17 @@ export const deleteDog = async (req: Request, res: Response) => {
       });
     }
 
-    // 해당 강아지의 예약이 있는지 확인
-    const appointmentCount = await GroomingAppointment.count({
-      where: { dog_id: id },
-    });
-
-    if (appointmentCount > 0) {
+    // 이미 삭제된 강아지인지 확인
+    if (dog.is_deleted) {
       return res.status(400).json({
         success: false,
-        message:
-          "예약이 존재하는 강아지는 삭제할 수 없습니다. 먼저 예약을 삭제해주세요.",
+        message: "이미 삭제된 강아지입니다.",
       });
     }
 
-    await dog.destroy();
+    // Soft delete: is_deleted 플래그를 true로 설정
+    dog.is_deleted = true;
+    await dog.save();
 
     res.status(200).json({
       success: true,

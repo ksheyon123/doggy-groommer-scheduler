@@ -11,6 +11,7 @@ import {
 } from "@heroui/react";
 import { SearchDropdown } from "./search-dropdown";
 import { InputDropdown } from "./input-dropdown";
+import { DogRegisterModal, type DogRegisterData } from "./dog-register-modal";
 import type { DogSearchItem } from "./search-dropdown";
 
 export interface GroomingTypeItem {
@@ -37,14 +38,6 @@ export interface AppointmentFormData {
   memo: string;
   grooming_type: string;
   amount: number | null;
-}
-
-export interface DogRegisterData {
-  name: string;
-  breed: string;
-  owner_name: string;
-  owner_phone_number: string;
-  note: string;
 }
 
 export interface AppointmentFormModalProps {
@@ -116,14 +109,6 @@ export function AppointmentFormModal({
 
   // 강아지 등록 모달 상태
   const [isDogRegisterOpen, setIsDogRegisterOpen] = useState(false);
-  const [dogRegisterData, setDogRegisterData] = useState<DogRegisterData>({
-    name: "",
-    breed: "",
-    owner_name: "",
-    owner_phone_number: "",
-    note: "",
-  });
-  const [isDogRegistering, setIsDogRegistering] = useState(false);
 
   // 초기값 설정
   useEffect(() => {
@@ -269,36 +254,14 @@ export function AppointmentFormModal({
   };
 
   // 강아지 등록 핸들러
-  const handleDogRegisterSubmit = async () => {
-    if (!dogRegisterData.name.trim()) {
-      alert("강아지 이름을 입력해주세요.");
-      return;
-    }
-
+  const handleDogRegisterSubmit = async (data: DogRegisterData) => {
     if (!onRegisterDog) {
-      alert("강아지 등록 기능이 설정되지 않았습니다.");
-      return;
+      throw new Error("강아지 등록 기능이 설정되지 않았습니다.");
     }
 
-    setIsDogRegistering(true);
-    try {
-      const newDog = await onRegisterDog(dogRegisterData);
-      // 등록된 강아지 자동 선택
-      handleDogSelect(newDog);
-      setIsDogRegisterOpen(false);
-      setDogRegisterData({
-        name: "",
-        breed: "",
-        owner_name: "",
-        owner_phone_number: "",
-        note: "",
-      });
-    } catch (error) {
-      console.error("강아지 등록 실패:", error);
-      alert("강아지 등록 중 오류가 발생했습니다.");
-    } finally {
-      setIsDogRegistering(false);
-    }
+    const newDog = await onRegisterDog(data);
+    // 등록된 강아지 자동 선택
+    handleDogSelect(newDog);
   };
 
   if (!isOpen) return null;
@@ -743,177 +706,13 @@ export function AppointmentFormModal({
       )}
 
       {/* 강아지 등록 모달 */}
-      {isDogRegisterOpen && (
-        <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setIsDogRegisterOpen(false);
-            }
-          }}
-        >
-          <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            {/* Header */}
-            <div className="px-6 py-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-                🐕 새 강아지 등록
-              </h3>
-              <button
-                type="button"
-                onClick={() => setIsDogRegisterOpen(false)}
-                className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-              >
-                <svg
-                  className="w-5 h-5 text-zinc-500"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
-
-            {/* Body */}
-            <div className="px-6 py-4 space-y-4 max-h-[50vh] overflow-y-auto">
-              {/* 강아지 이름 */}
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-                  강아지 이름 <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  type="text"
-                  placeholder="강아지 이름을 입력하세요"
-                  value={dogRegisterData.name}
-                  onChange={(e) =>
-                    setDogRegisterData((prev) => ({
-                      ...prev,
-                      name: e.target.value,
-                    }))
-                  }
-                  classNames={{
-                    inputWrapper:
-                      "bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700",
-                  }}
-                />
-              </div>
-
-              {/* 견종 */}
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-                  견종
-                </label>
-                <Input
-                  type="text"
-                  placeholder="예: 푸들, 말티즈, 시츄..."
-                  value={dogRegisterData.breed}
-                  onChange={(e) =>
-                    setDogRegisterData((prev) => ({
-                      ...prev,
-                      breed: e.target.value,
-                    }))
-                  }
-                  classNames={{
-                    inputWrapper:
-                      "bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700",
-                  }}
-                />
-              </div>
-
-              {/* 주인 이름 */}
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-                  주인 이름
-                </label>
-                <Input
-                  type="text"
-                  placeholder="주인 이름을 입력하세요"
-                  value={dogRegisterData.owner_name}
-                  onChange={(e) =>
-                    setDogRegisterData((prev) => ({
-                      ...prev,
-                      owner_name: e.target.value,
-                    }))
-                  }
-                  classNames={{
-                    inputWrapper:
-                      "bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700",
-                  }}
-                />
-              </div>
-
-              {/* 주인 전화번호 */}
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-                  주인 전화번호
-                </label>
-                <Input
-                  type="tel"
-                  placeholder="예: 010-1234-5678"
-                  value={dogRegisterData.owner_phone_number}
-                  onChange={(e) =>
-                    setDogRegisterData((prev) => ({
-                      ...prev,
-                      owner_phone_number: e.target.value,
-                    }))
-                  }
-                  classNames={{
-                    inputWrapper:
-                      "bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700",
-                  }}
-                />
-              </div>
-
-              {/* 특이사항 */}
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-                  특이사항
-                </label>
-                <Textarea
-                  placeholder="강아지 특이사항이나 주의사항을 입력해주세요..."
-                  value={dogRegisterData.note}
-                  onChange={(e) =>
-                    setDogRegisterData((prev) => ({
-                      ...prev,
-                      note: e.target.value,
-                    }))
-                  }
-                  minRows={2}
-                  classNames={{
-                    inputWrapper:
-                      "bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700",
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="px-6 py-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50 flex justify-end gap-3">
-              <Button
-                type="button"
-                variant="flat"
-                onClick={() => setIsDogRegisterOpen(false)}
-                disabled={isDogRegistering}
-              >
-                취소
-              </Button>
-              <Button
-                type="button"
-                color="primary"
-                onClick={handleDogRegisterSubmit}
-                disabled={isDogRegistering || !dogRegisterData.name.trim()}
-              >
-                {isDogRegistering ? <Spinner size="sm" /> : "등록"}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DogRegisterModal
+        isOpen={isDogRegisterOpen}
+        onClose={() => setIsDogRegisterOpen(false)}
+        onSubmit={handleDogRegisterSubmit}
+      />
     </div>
   );
 }
+
+export type { DogRegisterData };

@@ -19,6 +19,7 @@ import {
   type WeeklyAppointment,
 } from "@repo/ui";
 import { useState, useRef, useEffect } from "react";
+import moment from "moment";
 import { useRouter } from "next/navigation";
 import { getAccessToken, useAuth } from "@/lib/auth";
 import { useShop } from "@/lib/shop";
@@ -385,6 +386,7 @@ export default function Home() {
         endTime: formatTime(apt.end_time),
         dogName: apt.dog?.name || "이름 없음",
         serviceName: apt.grooming_type || "미용",
+        amount: apt.amount || 0,
       };
     });
 
@@ -406,7 +408,8 @@ export default function Home() {
       startTime: formatTime(apt.start_time),
       endTime: formatTime(apt.end_time),
       dogName: apt.dog?.name || "이름 없음",
-      serviceName: apt.grooming_type || "미용",
+      serviceName: apt.grooming_type || "",
+      amount: apt.amount || 0,
       color:
         groomerIndex >= 0
           ? GROOMER_COLORS[groomerIndex % GROOMER_COLORS.length]
@@ -457,6 +460,16 @@ export default function Home() {
       throw new Error("로그인이 필요합니다.");
     }
 
+    // 나이를 개월 수로 변환
+    let ageMonths = null;
+    if (dogData.birth_year && dogData.birth_month) {
+      const birthDate = moment(
+        `${dogData.birth_year}-${dogData.birth_month.padStart(2, "0")}-01`
+      );
+      const now = moment();
+      ageMonths = now.diff(birthDate, "months");
+    }
+
     const response = await fetch(`${API_BASE_URL}/api/dogs`, {
       method: "POST",
       headers: {
@@ -470,6 +483,8 @@ export default function Home() {
         owner_name: dogData.owner_name,
         owner_phone_number: dogData.owner_phone_number,
         note: dogData.note,
+        weight: dogData.weight ? parseFloat(dogData.weight) : null,
+        age_months: ageMonths,
       }),
     });
 

@@ -15,6 +15,7 @@ export interface Appointment {
   endTime: string;
   dogName: string;
   serviceName: string;
+  amount?: number; // 비용
 }
 
 export interface DailyViewProps {
@@ -247,6 +248,7 @@ export function DailyView({
                     groomer.id,
                     hour
                   );
+
                   const startingAppointments = slotAppointments.filter((apt) =>
                     appointmentStartsAtHour(apt, hour)
                   );
@@ -261,6 +263,7 @@ export function DailyView({
                     >
                       {/* 예약 카드들 */}
                       {startingAppointments.map((apt, aptIndex) => {
+                        console.log(apt);
                         const totalOverlapping = startingAppointments.length;
                         const width =
                           totalOverlapping > 1
@@ -292,6 +295,11 @@ export function DailyView({
                             <div className="text-xs text-zinc-600 truncate">
                               {apt.serviceName}
                             </div>
+                            {apt.amount !== undefined && (
+                              <div className="text-xs text-zinc-600 font-medium truncate">
+                                {apt.amount.toLocaleString()}원
+                              </div>
+                            )}
                             <div className="text-xs text-zinc-500">
                               {apt.startTime} - {apt.endTime}
                             </div>

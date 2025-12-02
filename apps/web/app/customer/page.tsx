@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { useAuth, getAccessToken } from "@/lib/auth";
 import { useShop } from "@/lib/shop";
 import { useRouter } from "next/navigation";
-import { Paginator } from "@repo/ui";
+import { Paginator, DogRegisterModal, type DogRegisterData } from "@repo/ui";
+import moment from "moment";
 
 interface Dog {
   id: number;
@@ -14,6 +15,8 @@ interface Dog {
   owner_name: string | null;
   owner_phone_number: string | null;
   note: string | null;
+  weight: number | null;
+  age_months: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -42,14 +45,6 @@ export default function CustomerManagementPage() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedDog, setSelectedDog] = useState<Dog | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [newDog, setNewDog] = useState({
-    name: "",
-    breed: "",
-    owner_name: "",
-    owner_phone_number: "",
-    note: "",
-  });
-  const [isRegistering, setIsRegistering] = useState(false);
   const [alertModal, setAlertModal] = useState<{
     isOpen: boolean;
     title: string;
@@ -124,55 +119,49 @@ export default function CustomerManagementPage() {
     }
   };
 
-  const handleRegisterDog = async () => {
-    if (!newDog.name.trim()) {
-      showAlert("알림", "강아지 이름을 입력해주세요.");
-      return;
-    }
+  const handleRegisterDog = async (data: DogRegisterData) => {
     if (!selectedShopId) {
-      showAlert("알림", "매장을 선택해주세요.");
-      return;
+      throw new Error("매장을 선택해주세요.");
     }
     const accessToken = getAccessToken();
     if (!accessToken) {
-      showAlert("알림", "로그인이 필요합니다.");
-      return;
+      throw new Error("로그인이 필요합니다.");
     }
-    setIsRegistering(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/dogs`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          shop_id: selectedShopId,
-          name: newDog.name.trim(),
-          breed: newDog.breed.trim() || null,
-          owner_name: newDog.owner_name.trim() || null,
-          owner_phone_number: newDog.owner_phone_number.trim() || null,
-          note: newDog.note.trim() || null,
-        }),
-      });
-      const data = await response.json();
-      if (response.ok && data.success) {
-        setNewDog({
-          name: "",
-          breed: "",
-          owner_name: "",
-          owner_phone_number: "",
-          note: "",
-        });
-        setIsRegisterModalOpen(false);
-        showAlert("알림", "강아지가 등록되었습니다.");
-        setCurrentPage(1);
-        fetchDogs(selectedShopId, 1);
-      } else showAlert("알림", data.message || "등록에 실패했습니다.");
-    } catch {
-      showAlert("알림", "등록 중 오류가 발생했습니다.");
-    } finally {
-      setIsRegistering(false);
+
+    // 나이를 개월 수로 변환
+    let ageMonths = null;
+    if (data.birth_year && data.birth_month) {
+      const birthDate = moment(
+        `${data.birth_year}-${data.birth_month.padStart(2, "0")}-01`
+      );
+      const now = moment();
+      ageMonths = now.diff(birthDate, "months");
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/dogs`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        shop_id: selectedShopId,
+        name: data.name.trim(),
+        breed: data.breed.trim() || null,
+        owner_name: data.owner_name.trim() || null,
+        owner_phone_number: data.owner_phone_number.trim() || null,
+        note: data.note.trim() || null,
+        weight: data.weight ? parseFloat(data.weight) : null,
+        age_months: ageMonths,
+      }),
+    });
+    const result = await response.json();
+    if (response.ok && result.success) {
+      showAlert("알림", "강아지가 등록되었습니다.");
+      setCurrentPage(1);
+      fetchDogs(selectedShopId, 1);
+    } else {
+      throw new Error(result.message || "등록에 실패했습니다.");
     }
   };
 
@@ -198,6 +187,8 @@ export default function CustomerManagementPage() {
             owner_name: selectedDog.owner_name?.trim() || null,
             owner_phone_number: selectedDog.owner_phone_number?.trim() || null,
             note: selectedDog.note?.trim() || null,
+            weight: selectedDog.weight,
+            age_months: selectedDog.age_months,
           }),
         }
       );
@@ -297,127 +288,11 @@ export default function CustomerManagementPage() {
         </div>
       )}
 
-      {isRegisterModalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setIsRegisterModalOpen(false);
-          }}
-        >
-          <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-2xl w-full max-w-md mx-4">
-            <div className="px-6 py-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-                강아지 등록
-              </h3>
-              <button
-                onClick={() => setIsRegisterModalOpen(false)}
-                className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg"
-              >
-                <svg
-                  className="w-5 h-5 text-zinc-500"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
-            <div className="px-6 py-6 space-y-4 max-h-[60vh] overflow-y-auto">
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-                  강아지 이름 <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={newDog.name}
-                  onChange={(e) =>
-                    setNewDog({ ...newDog, name: e.target.value })
-                  }
-                  placeholder="강아지 이름"
-                  className="w-full px-4 py-3 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-                  견종
-                </label>
-                <input
-                  type="text"
-                  value={newDog.breed}
-                  onChange={(e) =>
-                    setNewDog({ ...newDog, breed: e.target.value })
-                  }
-                  placeholder="견종"
-                  className="w-full px-4 py-3 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-                  보호자 이름
-                </label>
-                <input
-                  type="text"
-                  value={newDog.owner_name}
-                  onChange={(e) =>
-                    setNewDog({ ...newDog, owner_name: e.target.value })
-                  }
-                  placeholder="보호자 이름"
-                  className="w-full px-4 py-3 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-                  연락처
-                </label>
-                <input
-                  type="tel"
-                  value={newDog.owner_phone_number}
-                  onChange={(e) =>
-                    setNewDog({ ...newDog, owner_phone_number: e.target.value })
-                  }
-                  placeholder="연락처"
-                  className="w-full px-4 py-3 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-                  메모
-                </label>
-                <textarea
-                  value={newDog.note}
-                  onChange={(e) =>
-                    setNewDog({ ...newDog, note: e.target.value })
-                  }
-                  placeholder="메모"
-                  rows={3}
-                  className="w-full px-4 py-3 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 resize-none"
-                />
-              </div>
-            </div>
-            <div className="px-6 py-4 bg-zinc-50 dark:bg-zinc-800/50 border-t border-zinc-200 dark:border-zinc-800 flex justify-end gap-3">
-              <button
-                onClick={() => setIsRegisterModalOpen(false)}
-                className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-200 dark:bg-zinc-700 rounded-lg"
-              >
-                취소
-              </button>
-              <button
-                onClick={handleRegisterDog}
-                disabled={isRegistering || !newDog.name.trim()}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg disabled:opacity-50"
-              >
-                {isRegistering ? "등록 중..." : "등록"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DogRegisterModal
+        isOpen={isRegisterModalOpen}
+        onClose={() => setIsRegisterModalOpen(false)}
+        onSubmit={handleRegisterDog}
+      />
 
       {isDetailModalOpen && selectedDog && (
         <div
@@ -557,6 +432,59 @@ export default function CustomerManagementPage() {
                 ) : (
                   <p className="px-4 py-3 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-zinc-900 dark:text-zinc-100 whitespace-pre-wrap">
                     {selectedDog.note || "-"}
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                  몸무게 (kg)
+                </label>
+                {isEditMode ? (
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={selectedDog.weight ?? ""}
+                    onChange={(e) =>
+                      setSelectedDog({
+                        ...selectedDog,
+                        weight: e.target.value
+                          ? parseFloat(e.target.value)
+                          : null,
+                      })
+                    }
+                    placeholder="예: 5.5"
+                    className="w-full px-4 py-3 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
+                  />
+                ) : (
+                  <p className="px-4 py-3 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-zinc-900 dark:text-zinc-100">
+                    {selectedDog.weight ? `${selectedDog.weight}kg` : "-"}
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                  나이 (개월)
+                </label>
+                {isEditMode ? (
+                  <input
+                    type="number"
+                    value={selectedDog.age_months ?? ""}
+                    onChange={(e) =>
+                      setSelectedDog({
+                        ...selectedDog,
+                        age_months: e.target.value
+                          ? parseInt(e.target.value)
+                          : null,
+                      })
+                    }
+                    placeholder="예: 24 (2년)"
+                    className="w-full px-4 py-3 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
+                  />
+                ) : (
+                  <p className="px-4 py-3 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-zinc-900 dark:text-zinc-100">
+                    {selectedDog.age_months
+                      ? `${Math.floor(selectedDog.age_months / 12)}년 ${selectedDog.age_months % 12}개월`
+                      : "-"}
                   </p>
                 )}
               </div>
@@ -763,24 +691,24 @@ export default function CustomerManagementPage() {
                         key={dog.id}
                         className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
                       >
-                        <td className="px-6 py-4">
-                          <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="font-medium text-xs text-zinc-900 dark:text-zinc-100">
                             {dog.name}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-zinc-600 dark:text-zinc-400">
+                        <td className="px-6 py-4 whitespace-nowrap text-xs text-zinc-600 dark:text-zinc-400">
                           {dog.breed || "-"}
                         </td>
-                        <td className="px-6 py-4 text-zinc-600 dark:text-zinc-400">
+                        <td className="px-6 py-4 whitespace-nowrap text-xs text-zinc-600 dark:text-zinc-400">
                           {dog.owner_name || "-"}
                         </td>
-                        <td className="px-6 py-4 text-zinc-600 dark:text-zinc-400">
+                        <td className="px-6 py-4 whitespace-nowrap text-xs text-zinc-600 dark:text-zinc-400">
                           {dog.owner_phone_number || "-"}
                         </td>
-                        <td className="px-6 py-4 text-center">
+                        <td className="px-6 py-4 whitespace-nowrap text-xs text-center">
                           <button
                             onClick={() => openDetailModal(dog)}
-                            className="px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg"
+                            className="text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg"
                           >
                             상세
                           </button>

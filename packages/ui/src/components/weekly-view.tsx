@@ -12,6 +12,7 @@ export interface WeeklyAppointment {
   endTime: string;
   dogName: string;
   serviceName: string;
+  amount?: number; // 비용
   color: string;
 }
 
@@ -303,6 +304,17 @@ export function WeeklyView({
                             <div className="text-xs text-zinc-600 truncate">
                               {apt.groomerName}
                             </div>
+                            {apt.serviceName && (
+                              <div className="text-xs text-zinc-600 truncate">
+                                {apt.serviceName}
+                              </div>
+                            )}
+
+                            {apt.amount !== undefined && (
+                              <div className="text-xs text-zinc-600 font-medium truncate">
+                                {apt.amount.toLocaleString()}원
+                              </div>
+                            )}
                             <div className="text-xs text-zinc-500">
                               {apt.startTime}
                             </div>

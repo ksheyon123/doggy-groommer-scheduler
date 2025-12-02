@@ -57,6 +57,25 @@ export class Dog extends Model {
   })
   note!: string;
 
+  @Column({
+    type: DataType.FLOAT,
+    allowNull: true,
+  })
+  weight!: number;
+
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: true,
+  })
+  age_months!: number;
+
+  @Column({
+    type: DataType.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+  })
+  is_deleted!: boolean;
+
   @HasMany(() => GroomingAppointment)
   groomingAppointments!: GroomingAppointment[];
 }
