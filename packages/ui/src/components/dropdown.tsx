@@ -51,7 +51,7 @@ const viewModeLabels: Record<ViewMode, string> = {
 export function ViewModeDropdown({
   value,
   onChange,
-  label = "보기",
+  label = "",
 }: ViewModeDropdownProps) {
   const handleSelectionChange = (keys: "all" | Set<Key>) => {
     if (keys !== "all" && keys.size > 0) {

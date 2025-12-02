@@ -193,12 +193,17 @@ export function DailyView({
 
       {/* 미용선생님 + 시간대 그리드 */}
       <div className="flex-1 overflow-x-auto overflow-y-auto">
-        <div className="min-w-[800px]">
+        <div
+          className="inline-block"
+          style={{
+            minWidth: `${80 + gridColCount * 100}px`,
+          }}
+        >
           {/* 미용선생님 헤더 */}
           <div
             className="grid border-b border-zinc-200 dark:border-zinc-800 sticky top-0 bg-white dark:bg-zinc-900 z-20"
             style={{
-              gridTemplateColumns: `80px repeat(${gridColCount}, 1fr)`,
+              gridTemplateColumns: `80px repeat(${gridColCount}, 100px)`,
             }}
           >
             <div className="p-3 bg-zinc-50 dark:bg-zinc-800 text-center text-sm font-medium text-zinc-500 dark:text-zinc-400 border-r border-zinc-200 dark:border-zinc-700">
@@ -207,7 +212,7 @@ export function DailyView({
             {groomers.map((groomer) => (
               <div
                 key={groomer.id}
-                className="p-3 bg-zinc-50 dark:bg-zinc-800 text-center border-r border-zinc-200 dark:border-zinc-700 last:border-r-0"
+                className="p-3 bg-zinc-50 dark:bg-zinc-800 text-center border-r border-zinc-200 dark:border-zinc-700"
               >
                 <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                   {groomer.name}
@@ -226,7 +231,7 @@ export function DailyView({
                 key={hour}
                 className="grid border-b border-zinc-200 dark:border-zinc-800"
                 style={{
-                  gridTemplateColumns: `80px repeat(${gridColCount}, 1fr)`,
+                  gridTemplateColumns: `80px repeat(${gridColCount}, 100px)`,
                 }}
               >
                 {/* 시간 라벨 */}
@@ -249,7 +254,7 @@ export function DailyView({
                   return (
                     <div
                       key={`${groomer.id}-${hour}`}
-                      className="relative h-12 border-r border-zinc-200 dark:border-zinc-800 last:border-r-0"
+                      className="relative h-12 border-r border-zinc-200 dark:border-zinc-800"
                       onClick={() =>
                         onTimeSlotClick?.(groomer.id, formatHour(hour))
                       }
