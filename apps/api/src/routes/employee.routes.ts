@@ -7,6 +7,7 @@ import {
   updateEmployee,
   deleteEmployee,
 } from "../controllers/employee.controller";
+import { authMiddleware } from "../middlewares/auth.middleware";
 
 const router = Router();
 
@@ -25,7 +26,7 @@ router.post("/", createEmployee);
 // 직원 역할 수정
 router.put("/:id", updateEmployee);
 
-// 직원 삭제 (샵에서 사용자 제거)
-router.delete("/:id", deleteEmployee);
+// 직원 삭제 (샵에서 사용자 제거) - 인증 필요
+router.delete("/:id", authMiddleware, deleteEmployee);
 
 export default router;

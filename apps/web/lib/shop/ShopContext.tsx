@@ -20,12 +20,15 @@ export interface Shop {
   name: string;
   address?: string;
   phone?: string;
+  role?: "owner" | "staff";
+  employee_id?: number;
 }
 
 interface ShopContextType {
   shops: Shop[];
   selectedShop: Shop | null;
   isLoadingShops: boolean;
+  isOwner: boolean;
   setSelectedShop: (shop: Shop | null) => void;
   refreshShops: () => Promise<void>;
 }
@@ -120,10 +123,14 @@ export function ShopProvider({ children }: ShopProviderProps) {
     }
   }, [shops]);
 
+  // 현재 선택된 샵에서 Owner인지 확인
+  const isOwner = selectedShop?.role === "owner";
+
   const value: ShopContextType = {
     shops,
     selectedShop,
     isLoadingShops,
+    isOwner,
     setSelectedShop,
     refreshShops,
   };

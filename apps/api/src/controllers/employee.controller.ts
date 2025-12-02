@@ -17,7 +17,7 @@ export const getEmployeesByShopId = async (req: Request, res: Response) => {
     const offset = (pageNum - 1) * limitNum;
 
     const { count, rows: employees } = await Employee.findAndCountAll({
-      where: { shop_id: shopId },
+      where: { shop_id: shopId, is_active: true },
       include: [
         {
           model: User,
@@ -100,7 +100,7 @@ export const getShopsByUserId = async (req: Request, res: Response) => {
     const { userId } = req.params;
 
     const employees = await Employee.findAll({
-      where: { user_id: userId },
+      where: { user_id: userId, is_active: true },
       include: [
         {
           model: Shop,
@@ -158,12 +158,41 @@ export const createEmployee = async (req: Request, res: Response) => {
       });
     }
 
-    // 이미 해당 샵에 등록된 직원인지 확인
+    // 이미 해당 샵에 등록된 직원인지 확인 (비활성화된 직원 포함)
     const existingEmployee = await Employee.findOne({
       where: { shop_id, user_id },
     });
 
     if (existingEmployee) {
+      // 비활성화된 직원인 경우 다시 활성화
+      if (!existingEmployee.is_active) {
+        existingEmployee.is_active = true;
+        existingEmployee.role = role || existingEmployee.role;
+        await existingEmployee.save();
+
+        const reactivatedEmployee = await Employee.findByPk(
+          existingEmployee.id,
+          {
+            include: [
+              {
+                model: User,
+                attributes: ["id", "name", "email"],
+              },
+              {
+                model: Shop,
+                attributes: ["id", "name"],
+              },
+            ],
+          }
+        );
+
+        return res.status(200).json({
+          success: true,
+          message: "직원이 다시 활성화되었습니다.",
+          data: reactivatedEmployee,
+        });
+      }
+
       return res.status(400).json({
         success: false,
         message: "이미 해당 샵에 등록된 직원입니다.",
@@ -249,25 +278,109 @@ export const updateEmployee = async (req: Request, res: Response) => {
   }
 };
 
-// 직원 삭제 (샵에서 사용자 제거)
+// 직원 삭제 (샵에서 사용자 제거) - Owner만 가능
 export const deleteEmployee = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const { shopId } = req.query;
+    const userId = req.user?.userId;
 
-    const employee = await Employee.findByPk(id);
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "인증이 필요합니다.",
+      });
+    }
 
-    if (!employee) {
+    if (!shopId) {
+      return res.status(400).json({
+        success: false,
+        message: "샵 ID가 필요합니다.",
+      });
+    }
+
+    // 삭제 대상 직원 조회
+    const targetEmployee = await Employee.findByPk(id, {
+      include: [
+        {
+          model: User,
+          attributes: ["id", "name", "email"],
+        },
+      ],
+    });
+
+    if (!targetEmployee) {
       return res.status(404).json({
         success: false,
         message: "직원을 찾을 수 없습니다.",
       });
     }
 
-    await employee.destroy();
+    // 삭제 대상이 해당 샵 소속인지 확인
+    if (targetEmployee.shop_id !== Number(shopId)) {
+      return res.status(400).json({
+        success: false,
+        message: "해당 샵에 소속된 직원이 아닙니다.",
+      });
+    }
+
+    // 요청자의 해당 샵에서의 역할 확인
+    const requesterEmployee = await Employee.findOne({
+      where: {
+        shop_id: Number(shopId),
+        user_id: userId,
+        is_active: true,
+      },
+    });
+
+    if (!requesterEmployee) {
+      return res.status(403).json({
+        success: false,
+        message: "해당 샵에 대한 접근 권한이 없습니다.",
+      });
+    }
+
+    if (requesterEmployee.role !== "owner") {
+      return res.status(403).json({
+        success: false,
+        message: "Owner만 직원을 삭제할 수 있습니다.",
+      });
+    }
+
+    // 자기 자신 삭제 방지
+    if (targetEmployee.user_id === userId) {
+      return res.status(400).json({
+        success: false,
+        message: "자기 자신은 삭제할 수 없습니다.",
+      });
+    }
+
+    // 삭제 대상이 Owner인 경우, 다른 활성 Owner가 있는지 확인
+    if (targetEmployee.role === "owner") {
+      const ownerCount = await Employee.count({
+        where: {
+          shop_id: Number(shopId),
+          role: "owner",
+          is_active: true,
+        },
+      });
+
+      if (ownerCount <= 1) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "마지막 Owner는 삭제할 수 없습니다. 샵에는 최소 1명의 Owner가 있어야 합니다.",
+        });
+      }
+    }
+
+    // Soft Delete: is_active를 false로 설정
+    targetEmployee.is_active = false;
+    await targetEmployee.save();
 
     res.status(200).json({
       success: true,
-      message: "직원이 성공적으로 삭제되었습니다.",
+      message: "직원이 성공적으로 해제되었습니다.",
     });
   } catch (error) {
     res.status(500).json({

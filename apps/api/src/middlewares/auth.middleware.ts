@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { verifyAccessToken, TokenPayload } from "../utils/jwt";
+import { Employee } from "../models/Employee";
 
 // Request 타입 확장
 // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -8,6 +9,8 @@ declare global {
   namespace Express {
     interface Request {
       user?: TokenPayload;
+      employeeRole?: string;
+      shopId?: number;
     }
   }
 }
@@ -73,5 +76,102 @@ export const optionalAuthMiddleware = (
     next();
   } catch {
     next();
+  }
+};
+
+// 샵 Owner 권한 검증 미들웨어
+// shopId는 req.params.shopId 또는 req.body.shop_id에서 가져옴
+export const ownerMiddleware = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      res.status(401).json({ error: "인증이 필요합니다." });
+      return;
+    }
+
+    // shopId를 다양한 소스에서 가져옴
+    const shopId = req.params.shopId || req.body.shop_id || req.query.shopId;
+
+    if (!shopId) {
+      res.status(400).json({ error: "샵 ID가 필요합니다." });
+      return;
+    }
+
+    // 해당 샵에서 사용자의 역할 확인 (활성 직원만)
+    const employee = await Employee.findOne({
+      where: {
+        shop_id: Number(shopId),
+        user_id: userId,
+        is_active: true,
+      },
+    });
+
+    if (!employee) {
+      res.status(403).json({ error: "해당 샵에 대한 접근 권한이 없습니다." });
+      return;
+    }
+
+    if (employee.role !== "owner") {
+      res.status(403).json({ error: "Owner 권한이 필요합니다." });
+      return;
+    }
+
+    // 역할 정보를 request에 저장
+    req.employeeRole = employee.role;
+    req.shopId = Number(shopId);
+
+    next();
+  } catch (error) {
+    console.error("Owner middleware error:", error);
+    res.status(500).json({ error: "권한 확인 중 오류가 발생했습니다." });
+  }
+};
+
+// 샵 멤버(Owner 또는 Staff) 권한 검증 미들웨어
+export const shopMemberMiddleware = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      res.status(401).json({ error: "인증이 필요합니다." });
+      return;
+    }
+
+    const shopId = req.params.shopId || req.body.shop_id || req.query.shopId;
+
+    if (!shopId) {
+      res.status(400).json({ error: "샵 ID가 필요합니다." });
+      return;
+    }
+
+    const employee = await Employee.findOne({
+      where: {
+        shop_id: Number(shopId),
+        user_id: userId,
+        is_active: true,
+      },
+    });
+
+    if (!employee) {
+      res.status(403).json({ error: "해당 샵에 대한 접근 권한이 없습니다." });
+      return;
+    }
+
+    req.employeeRole = employee.role;
+    req.shopId = Number(shopId);
+
+    next();
+  } catch (error) {
+    console.error("Shop member middleware error:", error);
+    res.status(500).json({ error: "권한 확인 중 오류가 발생했습니다." });
   }
 };

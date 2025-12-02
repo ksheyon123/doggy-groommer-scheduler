@@ -74,6 +74,13 @@ export default function EmployeeManagementPage() {
     message: string;
   }>({ isOpen: false, title: "", message: "" });
 
+  // 직원 삭제 확인 모달 상태
+  const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean;
+    employeeId: number | null;
+    employeeName: string;
+  }>({ isOpen: false, employeeId: null, employeeName: "" });
+
   // 알림 모달 표시
   const showAlert = (title: string, message: string) => {
     setAlertModal({ isOpen: true, title, message });
@@ -273,6 +280,52 @@ export default function EmployeeManagementPage() {
     }
   };
 
+  // 직원 해제 처리
+  const handleDeleteEmployee = async () => {
+    if (!deleteModal.employeeId || !selectedShopId) return;
+
+    const accessToken = getAccessToken();
+    if (!accessToken) {
+      showAlert("알림", "로그인이 필요합니다.");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/employees/${deleteModal.employeeId}?shopId=${selectedShopId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        showAlert("알림", "직원이 해제되었습니다.");
+        fetchEmployees(currentPage);
+      } else {
+        showAlert("알림", data.message || "직원 해제에 실패했습니다.");
+      }
+    } catch (error) {
+      console.error("직원 삭제 실패:", error);
+      showAlert("알림", "직원 해제 중 오류가 발생했습니다.");
+    } finally {
+      setDeleteModal({ isOpen: false, employeeId: null, employeeName: "" });
+    }
+  };
+
+  // 해제 버튼 클릭 핸들러
+  const openDeleteModal = (employee: Employee) => {
+    setDeleteModal({
+      isOpen: true,
+      employeeId: employee.id,
+      employeeName: employee.user?.name || employee.user?.email || "직원",
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center">
@@ -402,6 +455,57 @@ export default function EmployeeManagementPage() {
                 ) : (
                   "추가"
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 직원 삭제 확인 모달 */}
+      {deleteModal.isOpen && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          onClick={(e) => {
+            if (e.target === e.currentTarget)
+              setDeleteModal({
+                isOpen: false,
+                employeeId: null,
+                employeeName: "",
+              });
+          }}
+        >
+          <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-zinc-200 dark:border-zinc-800">
+              <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+                직원 해제 확인
+              </h3>
+            </div>
+            <div className="px-6 py-6">
+              <p className="text-zinc-700 dark:text-zinc-300">
+                <strong className="text-zinc-900 dark:text-zinc-100">
+                  {deleteModal.employeeName}
+                </strong>{" "}
+                님을 해당 매장에서 해제하시겠습니까?
+              </p>
+            </div>
+            <div className="px-6 py-4 bg-zinc-50 dark:bg-zinc-800/50 border-t border-zinc-200 dark:border-zinc-800 flex justify-end gap-3">
+              <button
+                onClick={() =>
+                  setDeleteModal({
+                    isOpen: false,
+                    employeeId: null,
+                    employeeName: "",
+                  })
+                }
+                className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-200 dark:bg-zinc-700 rounded-lg hover:bg-zinc-300 dark:hover:bg-zinc-600 transition-colors"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleDeleteEmployee}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+              >
+                해제
               </button>
             </div>
           </div>
@@ -590,6 +694,9 @@ export default function EmployeeManagementPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                       이메일
                     </th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                      관리
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
@@ -612,6 +719,34 @@ export default function EmployeeManagementPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-600 dark:text-zinc-400">
                         {employee.user?.email || "-"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        {employee.role !== "owner" && (
+                          <button
+                            onClick={() => openDeleteModal(employee)}
+                            className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                            title="직원 해제"
+                          >
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              />
+                            </svg>
+                          </button>
+                        )}
+                        {employee.role === "owner" && (
+                          <span className="text-xs text-zinc-400 dark:text-zinc-500">
+                            -
+                          </span>
+                        )}
                       </td>
                     </tr>
                   ))}

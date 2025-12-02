@@ -42,4 +42,11 @@ export class Employee extends Model {
     defaultValue: "staff",
   })
   role!: string;
+
+  @Column({
+    type: DataType.BOOLEAN,
+    allowNull: false,
+    defaultValue: true,
+  })
+  is_active!: boolean;
 }
