@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button, Spinner, Select, SelectItem } from "@heroui/react";
+import { Button, Spinner } from "@heroui/react";
 import { Input } from "./input";
 import { Textarea } from "./textarea";
+import { Select } from "./select";
 import { SearchDropdown } from "./search-dropdown";
 import { InputDropdown } from "./input-dropdown";
 import { DogRegisterModal, type DogRegisterData } from "./dog-register-modal";
@@ -413,63 +414,27 @@ export function AppointmentFormModal({
 
             {/* 담당 미용사 */}
             <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-                담당 미용사
-              </label>
               {groomers.length > 0 ? (
                 <Select
+                  label="담당 미용사"
                   placeholder="담당 미용사를 선택하세요"
-                  selectedKeys={
-                    formData.assigned_user_id
-                      ? [String(formData.assigned_user_id)]
-                      : []
+                  options={groomers.map((groomer) => ({
+                    id: groomer.user_id,
+                    label: groomer.name,
+                    subtitle: groomer.role
+                      ? groomer.role === "owner"
+                        ? "원장"
+                        : groomer.role === "manager"
+                          ? "매니저"
+                          : "직원"
+                      : undefined,
+                    avatarColor: "blue",
+                  }))}
+                  selectedId={formData.assigned_user_id}
+                  onSelectionChange={(id) =>
+                    handleInputChange("assigned_user_id", id as number | null)
                   }
-                  onSelectionChange={(keys) => {
-                    const selected = Array.from(keys)[0] as string;
-                    handleInputChange(
-                      "assigned_user_id",
-                      selected ? Number(selected) : null
-                    );
-                  }}
-                  classNames={{
-                    trigger:
-                      "bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700",
-                  }}
-                >
-                  {groomers.map((groomer) => (
-                    <SelectItem
-                      key={String(groomer.user_id)}
-                      textValue={groomer.name}
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-sm font-medium text-blue-600 dark:text-blue-400">
-                          {groomer.name.charAt(0)}
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-sm">{groomer.name}</span>
-                          {groomer.role && (
-                            <span className="text-xs text-zinc-500">
-                              {groomer.role === "owner"
-                                ? "원장"
-                                : groomer.role === "manager"
-                                  ? "매니저"
-                                  : "직원"}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </Select>
-              ) : groomerName ? (
-                <Input
-                  type="text"
-                  value={groomerName}
-                  isReadOnly
-                  classNames={{
-                    inputWrapper:
-                      "bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700",
-                  }}
+                  showAvatar
                 />
               ) : (
                 <p className="text-sm text-zinc-500 dark:text-zinc-400">

@@ -1,35 +1,42 @@
 "use client";
 
-import { Select, SelectItem } from "@heroui/react";
+import { Select as HeroSelect, SelectItem } from "@heroui/react";
 
-export interface AvatarSelectItem {
+export interface SelectOption {
   id: number | string;
-  name: string;
+  label: string;
+  value?: string | number;
   subtitle?: string;
   avatarColor?: string;
 }
 
-export interface AvatarSelectProps {
-  items: AvatarSelectItem[];
+export interface SelectProps {
+  options: SelectOption[];
   selectedId: number | string | null;
   onSelectionChange: (id: number | string | null) => void;
   placeholder?: string;
   label?: string;
   emptyMessage?: string;
   className?: string;
+  isDisabled?: boolean;
+  isRequired?: boolean;
+  showAvatar?: boolean;
   defaultAvatarColor?: string;
 }
 
-export function AvatarSelect({
-  items,
+export function Select({
+  options,
   selectedId,
   onSelectionChange,
   placeholder = "선택하세요",
   label,
   emptyMessage = "항목이 없습니다",
   className = "",
+  isDisabled = false,
+  isRequired = false,
+  showAvatar = false,
   defaultAvatarColor = "purple",
-}: AvatarSelectProps) {
+}: SelectProps) {
   const getAvatarColorClass = (color?: string) => {
     const avatarColor = color || defaultAvatarColor;
     const colorMap: Record<string, string> = {
@@ -52,9 +59,10 @@ export function AvatarSelect({
       {label && (
         <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
           {label}
+          {isRequired && <span className="text-red-500 ml-1">*</span>}
         </label>
       )}
-      <Select
+      <HeroSelect
         placeholder={placeholder}
         selectedKeys={selectedId ? [String(selectedId)] : []}
         onSelectionChange={(keys) => {
@@ -62,8 +70,8 @@ export function AvatarSelect({
           if (selected === "empty") {
             onSelectionChange(null);
           } else {
-            // 원래 타입으로 복원 (숫자인지 문자열인지 확인)
-            const originalItem = items.find(
+            // 원래 타입으로 복원
+            const originalItem = options.find(
               (item) => String(item.id) === selected
             );
             onSelectionChange(originalItem?.id || null);
@@ -73,25 +81,31 @@ export function AvatarSelect({
           trigger:
             "bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700",
         }}
+        isDisabled={isDisabled}
+        isRequired={isRequired}
       >
-        {items.length > 0 ? (
-          items.map((item) => (
-            <SelectItem key={String(item.id)} textValue={item.name}>
-              <div className="flex items-center gap-2">
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${getAvatarColorClass(item.avatarColor)}`}
-                >
-                  {item.name.charAt(0)}
+        {options.length > 0 ? (
+          options.map((option) => (
+            <SelectItem key={String(option.id)} textValue={option.label}>
+              {showAvatar ? (
+                <div className="flex items-center gap-2">
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${getAvatarColorClass(option.avatarColor)}`}
+                  >
+                    {option.label.charAt(0)}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-sm">{option.label}</span>
+                    {option.subtitle && (
+                      <span className="text-xs text-zinc-500">
+                        {option.subtitle}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-sm">{item.name}</span>
-                  {item.subtitle && (
-                    <span className="text-xs text-zinc-500">
-                      {item.subtitle}
-                    </span>
-                  )}
-                </div>
-              </div>
+              ) : (
+                option.label
+              )}
             </SelectItem>
           ))
         ) : (
@@ -99,7 +113,7 @@ export function AvatarSelect({
             {emptyMessage}
           </SelectItem>
         )}
-      </Select>
+      </HeroSelect>
     </div>
   );
 }

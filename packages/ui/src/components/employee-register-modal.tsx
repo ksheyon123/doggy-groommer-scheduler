@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@heroui/react";
 import { Input } from "./input";
-import { AvatarSelect } from "./avatar-select";
+import { Select } from "./select";
 
 export interface EmployeeRegisterShop {
   id: number;
@@ -92,13 +92,17 @@ export function EmployeeRegisterModal({
 
         {/* 모달 본문 */}
         <div className="px-6 py-6 space-y-4">
-          <AvatarSelect
+          <Select
             label="매장 선택"
             placeholder="매장을 선택하세요"
-            items={shops}
+            options={shops.map((shop) => ({
+              id: shop.id,
+              label: shop.name,
+            }))}
             selectedId={selectedShopId}
             onSelectionChange={(id) => setSelectedShopId(id as number | null)}
             emptyMessage="Owner인 매장이 없습니다"
+            showAvatar
           />
           <div>
             <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">

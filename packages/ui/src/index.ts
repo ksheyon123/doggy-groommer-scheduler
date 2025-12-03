@@ -4,7 +4,7 @@ export * from "./components/provider";
 // Components
 export * from "./components/input";
 export * from "./components/textarea";
-export * from "./components/avatar-select";
+export * from "./components/select";
 export * from "./components/button";
 export * from "./components/card";
 export * from "./components/calendar";

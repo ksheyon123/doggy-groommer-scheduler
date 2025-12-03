@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth, getAccessToken } from "@/lib/auth";
 import { useShop } from "@/lib/shop";
 import { useRouter } from "next/navigation";
-import { Paginator, EmployeeRegisterModal } from "@repo/ui";
+import { Paginator, EmployeeRegisterModal, Select } from "@repo/ui";
 
 // 타입 정의
 interface Shop {
@@ -473,7 +473,7 @@ export default function EmployeeManagementPage() {
             <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
               매장 선택
             </h2>
-            <div className="relative w-full max-w-md">
+            <div className="w-full max-w-md">
               {isLoadingShops ? (
                 <div className="flex items-center gap-2 px-4 py-3 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
@@ -482,49 +482,18 @@ export default function EmployeeManagementPage() {
                   </span>
                 </div>
               ) : (
-                <select
-                  value={selectedShopId || ""}
-                  onChange={(e) =>
-                    setSelectedShopId(
-                      e.target.value ? Number(e.target.value) : null
-                    )
+                <Select
+                  placeholder="매장을 선택하세요"
+                  options={ownerShops.map((shop) => ({
+                    id: shop.id,
+                    label: shop.name,
+                  }))}
+                  selectedId={selectedShopId}
+                  onSelectionChange={(id) =>
+                    setSelectedShopId(id as number | null)
                   }
-                  className="w-full px-4 py-3 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none cursor-pointer"
-                >
-                  {ownerShops.length > 0 ? (
-                    <>
-                      <option value="" disabled>
-                        매장을 선택하세요
-                      </option>
-                      {ownerShops.map((shop) => (
-                        <option key={shop.id} value={shop.id}>
-                          {shop.name}
-                        </option>
-                      ))}
-                    </>
-                  ) : (
-                    <option value="" disabled>
-                      Owner인 매장이 없습니다
-                    </option>
-                  )}
-                </select>
-              )}
-              {!isLoadingShops && (
-                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                  <svg
-                    className="w-5 h-5 text-zinc-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </div>
+                  emptyMessage="Owner인 매장이 없습니다"
+                />
               )}
             </div>
             {ownerShops.length === 0 && !isLoadingShops && (

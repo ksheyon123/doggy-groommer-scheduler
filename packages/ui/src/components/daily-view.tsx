@@ -263,7 +263,6 @@ export function DailyView({
                     >
                       {/* 예약 카드들 */}
                       {startingAppointments.map((apt, aptIndex) => {
-                        console.log(apt);
                         const totalOverlapping = startingAppointments.length;
                         const width =
                           totalOverlapping > 1
