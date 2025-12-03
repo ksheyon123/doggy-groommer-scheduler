@@ -14,6 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
+  ),
   title: "멍멍 미용실 - 반려견 미용 예약 시스템",
   description: "반려견 미용 예약을 간편하게 관리하세요",
   openGraph: {
