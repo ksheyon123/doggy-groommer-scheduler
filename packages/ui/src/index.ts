@@ -2,6 +2,9 @@
 export * from "./components/provider";
 
 // Components
+export * from "./components/input";
+export * from "./components/textarea";
+export * from "./components/avatar-select";
 export * from "./components/button";
 export * from "./components/card";
 export * from "./components/calendar";
@@ -16,5 +19,6 @@ export * from "./components/search-dropdown";
 export * from "./components/input-dropdown";
 export * from "./components/appointment-form-modal";
 export * from "./components/dog-register-modal";
+export * from "./components/employee-register-modal";
 export * from "./components/shop-register-modal";
 export * from "./components/paginator";

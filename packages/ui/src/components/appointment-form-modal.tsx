@@ -1,14 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  Input,
-  Textarea,
-  Button,
-  Spinner,
-  Select,
-  SelectItem,
-} from "@heroui/react";
+import { Button, Spinner, Select, SelectItem } from "@heroui/react";
+import { Input } from "./input";
+import { Textarea } from "./textarea";
 import { SearchDropdown } from "./search-dropdown";
 import { InputDropdown } from "./input-dropdown";
 import { DogRegisterModal, type DogRegisterData } from "./dog-register-modal";
@@ -609,6 +604,7 @@ export function AppointmentFormModal({
                 onChange={(e) => handleInputChange("memo", e.target.value)}
                 minRows={3}
                 classNames={{
+                  input: "outline-none",
                   inputWrapper:
                     "bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700",
                 }}

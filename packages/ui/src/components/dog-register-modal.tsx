@@ -1,14 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  Input,
-  Textarea,
-  Button,
-  Spinner,
-  Select,
-  SelectItem,
-} from "@heroui/react";
+import { Button, Spinner, Select, SelectItem } from "@heroui/react";
+import { Input } from "./input";
+import { Textarea } from "./textarea";
 
 export interface DogRegisterData {
   name: string;
