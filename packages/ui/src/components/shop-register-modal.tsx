@@ -11,6 +11,7 @@ export interface ShopRegisterModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: ShopRegisterData) => Promise<void>;
+  onLogout?: () => void; // 로그아웃 콜백
   isLoading?: boolean;
   isRequired?: boolean; // 매장 등록이 필수인지 여부 (닫기 버튼 표시 안함)
 }
@@ -19,6 +20,7 @@ export function ShopRegisterModal({
   isOpen,
   onClose,
   onSubmit,
+  onLogout,
   isLoading = false,
   isRequired = false,
 }: ShopRegisterModalProps) {
@@ -139,24 +141,48 @@ export function ShopRegisterModal({
 
         {/* Footer */}
         <div className="px-6 py-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50 flex justify-end gap-3">
-          {!isRequired && (
-            <Button
-              type="button"
-              variant="flat"
-              onClick={onClose}
-              disabled={isSubmitting || isLoading}
-            >
-              취소
-            </Button>
+          {isRequired ? (
+            <>
+              {onLogout && (
+                <Button
+                  type="button"
+                  variant="flat"
+                  color="danger"
+                  onClick={onLogout}
+                  disabled={isSubmitting || isLoading}
+                >
+                  로그아웃
+                </Button>
+              )}
+              <Button
+                type="button"
+                color="primary"
+                onClick={handleSubmit}
+                disabled={isSubmitting || isLoading || !formData.name.trim()}
+              >
+                {isSubmitting || isLoading ? <Spinner size="sm" /> : "등록"}
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                type="button"
+                variant="flat"
+                onClick={onClose}
+                disabled={isSubmitting || isLoading}
+              >
+                취소
+              </Button>
+              <Button
+                type="button"
+                color="primary"
+                onClick={handleSubmit}
+                disabled={isSubmitting || isLoading || !formData.name.trim()}
+              >
+                {isSubmitting || isLoading ? <Spinner size="sm" /> : "등록"}
+              </Button>
+            </>
           )}
-          <Button
-            type="button"
-            color="primary"
-            onClick={handleSubmit}
-            disabled={isSubmitting || isLoading || !formData.name.trim()}
-          >
-            {isSubmitting || isLoading ? <Spinner size="sm" /> : "등록"}
-          </Button>
         </div>
       </div>
     </div>

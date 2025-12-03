@@ -338,6 +338,7 @@ export default function Home() {
   const handleLogout = async () => {
     await logout();
     setIsUserMenuOpen(false);
+    setIsShopRegisterModalOpen(false);
   };
 
   const handleLoginClick = () => {
@@ -762,6 +763,7 @@ export default function Home() {
         isOpen={isShopRegisterModalOpen}
         onClose={() => setIsShopRegisterModalOpen(false)}
         onSubmit={handleRegisterShop}
+        onLogout={handleLogout}
         isRequired={shops.length === 0 && isAuthenticated}
       />
 
