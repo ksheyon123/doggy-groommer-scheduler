@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import axios from "axios";
+import bcrypt from "bcrypt";
 import { User, AuthProvider } from "../models/User";
 import { generateTokens, verifyRefreshToken } from "../utils/jwt";
 
@@ -393,5 +394,74 @@ export const getMe = async (req: Request, res: Response): Promise<void> => {
   } catch (error) {
     console.error("Get user error:", error);
     res.status(500).json({ error: "Failed to get user info" });
+  }
+};
+
+// Email/Password 로그인
+export const login = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email, password } = req.body;
+    console.log(email, password);
+    // 입력값 검증
+    if (!email || !password) {
+      res.status(400).json({ error: "Email and password are required" });
+      return;
+    }
+
+    // 사용자 조회 (local provider만 조회)
+    const user = await User.findOne({
+      where: {
+        email,
+        provider: "local",
+      },
+    });
+
+    if (!user) {
+      res.status(401).json({ error: "Invalid email or password" });
+      return;
+    }
+
+    // 비밀번호가 없는 사용자 (SNS 로그인만 사용)
+    if (!user.password) {
+      res.status(401).json({ error: "Invalid email or password" });
+      return;
+    }
+
+    // 계정 활성화 상태 확인
+    if (!user.is_active) {
+      res.status(403).json({ error: "Account is deactivated" });
+      return;
+    }
+
+    // 비밀번호 검증
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      res.status(401).json({ error: "Invalid email or password" });
+      return;
+    }
+
+    // JWT 토큰 생성
+    const tokens = generateTokens({
+      userId: user.id,
+      email: user.email,
+      provider: user.provider,
+    });
+
+    // Refresh token을 DB에 저장
+    await user.update({ refresh_token: tokens.refreshToken });
+
+    res.json({
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        profileImage: user.profile_image,
+        provider: user.provider,
+      },
+      ...tokens,
+    });
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).json({ error: "Login failed" });
   }
 };

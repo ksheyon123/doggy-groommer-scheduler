@@ -5,10 +5,10 @@ const apiUrl = "/api";
 export const authProvider: AuthProvider = {
   login: async ({ username, password }) => {
     // 관리자 로그인 API 호출
-    const response = await fetch(`${apiUrl}/auth/admin/login`, {
+    const response = await fetch(`http://localhost:3001${apiUrl}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ email: username, password }),
     });
 
     if (!response.ok) {

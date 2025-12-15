@@ -6,10 +6,14 @@ import {
   refreshToken,
   logout,
   getMe,
+  login,
 } from "../controllers/auth.controller";
 import { authMiddleware } from "../middlewares/auth.middleware";
 
 const router = Router();
+
+// Email/Password 로그인
+router.post("/login", login);
 
 // SNS OAuth 콜백 엔드포인트
 router.post("/google/callback", googleCallback);
