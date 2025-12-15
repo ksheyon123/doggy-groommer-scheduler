@@ -12,9 +12,7 @@ import {
   TextInput,
   Show,
   SimpleShowLayout,
-  ReferenceManyField,
   required,
-  useRecordContext,
 } from "react-admin";
 
 // Shop List

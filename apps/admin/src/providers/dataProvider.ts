@@ -24,8 +24,8 @@ const transformResponse = (response: any) => {
 
 export const dataProvider: DataProvider = {
   getList: async (resource, params) => {
-    const { page, perPage } = params.pagination;
-    const { field, order } = params.sort;
+    const { page, perPage } = params.pagination as any;
+    const { field, order } = params.sort as any;
 
     const query = {
       page,
@@ -112,7 +112,7 @@ export const dataProvider: DataProvider = {
     };
   },
 
-  create: async (resource, params) => {
+  create: async (resource: string, params: any) => {
     const url = `${apiUrl}/${resource}`;
     const { json } = await httpClient(url, {
       method: "POST",
@@ -148,7 +148,7 @@ export const dataProvider: DataProvider = {
 
   delete: async (resource, params) => {
     const url = `${apiUrl}/${resource}/${params.id}`;
-    const { json } = await httpClient(url, {
+    await httpClient(url, {
       method: "DELETE",
     });
 
