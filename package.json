@@ -14,7 +14,13 @@
   },
   "devDependencies": {
     "turbo": "latest",
-    "prettier": "latest"
+    "prettier": "latest",
+    "@types/react": "^19.2.5",
+    "@types/react-dom": "^19.2.3"
+  },
+  "overrides": {
+    "@types/react": "^19.2.5",
+    "@types/react-dom": "^19.2.3"
   },
   "packageManager": "npm@10.0.0"
 }
