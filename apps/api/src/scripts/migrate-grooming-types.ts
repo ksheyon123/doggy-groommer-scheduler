@@ -11,6 +11,14 @@ import { GroomingAppointment } from "../models/GroomingAppointment";
 import { GroomingType } from "../models/GroomingType";
 import { AppointmentGroomingType } from "../models/AppointmentGroomingType";
 
+// Raw appointment 타입 정의
+interface RawAppointment {
+  id: number;
+  shop_id: number;
+  grooming_type: string;
+  amount: number | null;
+}
+
 async function migrateGroomingTypes() {
   try {
     console.log("🚀 마이그레이션 시작...");
@@ -36,10 +44,11 @@ async function migrateGroomingTypes() {
 
     for (const appointment of appointments) {
       try {
-        const aptId = (appointment as any).id;
-        const shopId = (appointment as any).shop_id;
-        const groomingTypeName = (appointment as any).grooming_type;
-        const amount = (appointment as any).amount || 0;
+        const rawAppointment = appointment as unknown as RawAppointment;
+        const aptId = rawAppointment.id;
+        const shopId = rawAppointment.shop_id;
+        const groomingTypeName = rawAppointment.grooming_type;
+        const amount = rawAppointment.amount || 0;
 
         // 이미 마이그레이션된 데이터인지 확인
         const existingRelation = await AppointmentGroomingType.findOne({
@@ -79,8 +88,9 @@ async function migrateGroomingTypes() {
         }
       } catch (error) {
         errorCount++;
+        const rawAppointmentForError = appointment as unknown as RawAppointment;
         console.error(
-          `❌ 예약 ID ${(appointment as any).id} 처리 실패:`,
+          `❌ 예약 ID ${rawAppointmentForError.id} 처리 실패:`,
           error
         );
       }
