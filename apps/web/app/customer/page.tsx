@@ -46,6 +46,8 @@ export default function CustomerManagementPage() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedDog, setSelectedDog] = useState<Dog | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [useAgeInput, setUseAgeInput] = useState(false);
+  const [ageInput, setAgeInput] = useState("");
   const [alertModal, setAlertModal] = useState<{
     isOpen: boolean;
     title: string;
@@ -239,6 +241,8 @@ export default function CustomerManagementPage() {
   const openDetailModal = (dog: Dog) => {
     setSelectedDog({ ...dog });
     setIsEditMode(false);
+    setUseAgeInput(false);
+    setAgeInput("");
     setIsDetailModalOpen(true);
   };
 
@@ -455,62 +459,122 @@ export default function CustomerManagementPage() {
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-                  생년월
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                    {isEditMode && useAgeInput ? "나이" : "생년월"}
+                  </label>
+                  {isEditMode && (
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={useAgeInput}
+                        onChange={(e) => {
+                          setUseAgeInput(e.target.checked);
+                          if (!e.target.checked) {
+                            setAgeInput("");
+                          } else {
+                            setSelectedDog({
+                              ...selectedDog,
+                              birth_year: null,
+                              birth_month: null,
+                            });
+                          }
+                        }}
+                        className="w-4 h-4 rounded border-zinc-300 dark:border-zinc-600 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                        나이로 입력
+                      </span>
+                    </label>
+                  )}
+                </div>
                 {isEditMode ? (
-                  <div className="grid grid-cols-2 gap-3">
-                    <select
-                      value={selectedDog.birth_year ?? ""}
-                      onChange={(e) =>
-                        setSelectedDog({
-                          ...selectedDog,
-                          birth_year: e.target.value
-                            ? parseInt(e.target.value)
-                            : null,
-                        })
-                      }
-                      className="w-full px-4 py-3 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
-                    >
-                      <option value="">년도 선택</option>
-                      {Array.from(
-                        { length: 30 },
-                        (_, i) => new Date().getFullYear() - i
-                      ).map((year) => (
-                        <option key={year} value={year}>
-                          {year}년
-                        </option>
-                      ))}
-                    </select>
-                    <select
-                      value={selectedDog.birth_month ?? ""}
-                      onChange={(e) =>
-                        setSelectedDog({
-                          ...selectedDog,
-                          birth_month: e.target.value
-                            ? parseInt(e.target.value)
-                            : null,
-                        })
-                      }
-                      className="w-full px-4 py-3 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
-                    >
-                      <option value="">월 선택</option>
-                      {Array.from({ length: 12 }, (_, i) => i + 1).map(
-                        (month) => (
-                          <option key={month} value={month}>
-                            {month}월
-                          </option>
-                        )
+                  useAgeInput ? (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min="1"
+                        max="30"
+                        placeholder="나이 입력"
+                        value={ageInput}
+                        onChange={(e) => {
+                          setAgeInput(e.target.value);
+                          const age = parseInt(e.target.value, 10);
+                          if (!isNaN(age) && age > 0) {
+                            const currentYear = new Date().getFullYear();
+                            const birthYear = currentYear - age + 1;
+                            setSelectedDog({
+                              ...selectedDog,
+                              birth_year: birthYear,
+                              birth_month: null,
+                            });
+                          }
+                        }}
+                        className="w-full px-4 py-3 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
+                      />
+                      <span className="text-zinc-400 text-sm">살</span>
+                      {ageInput && selectedDog.birth_year && (
+                        <span className="text-xs text-zinc-500 dark:text-zinc-400 whitespace-nowrap">
+                          ({selectedDog.birth_year}년생)
+                        </span>
                       )}
-                    </select>
-                  </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3">
+                      <select
+                        value={selectedDog.birth_year ?? ""}
+                        onChange={(e) =>
+                          setSelectedDog({
+                            ...selectedDog,
+                            birth_year: e.target.value
+                              ? parseInt(e.target.value)
+                              : null,
+                          })
+                        }
+                        className="w-full px-4 py-3 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
+                      >
+                        <option value="">년도 선택</option>
+                        {Array.from(
+                          { length: 30 },
+                          (_, i) => new Date().getFullYear() - i
+                        ).map((year) => (
+                          <option key={year} value={year}>
+                            {year}년
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        value={selectedDog.birth_month ?? ""}
+                        onChange={(e) =>
+                          setSelectedDog({
+                            ...selectedDog,
+                            birth_month: e.target.value
+                              ? parseInt(e.target.value)
+                              : null,
+                          })
+                        }
+                        className="w-full px-4 py-3 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
+                      >
+                        <option value="">월 선택</option>
+                        {Array.from({ length: 12 }, (_, i) => i + 1).map(
+                          (month) => (
+                            <option key={month} value={month}>
+                              {month}월
+                            </option>
+                          )
+                        )}
+                      </select>
+                    </div>
+                  )
                 ) : (
                   <p className="px-4 py-3 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-zinc-900 dark:text-zinc-100">
                     {selectedDog.birth_year && selectedDog.birth_month
                       ? `${selectedDog.birth_year}년 ${selectedDog.birth_month}월`
-                      : selectedDog.age_months
-                        ? `${Math.floor(selectedDog.age_months / 12)}년 ${selectedDog.age_months % 12}개월 (약 ${selectedDog.age_months}개월)`
-                        : "-"}
+                      : selectedDog.birth_year
+                        ? `${selectedDog.birth_year}년생`
+                        : selectedDog.age_months
+                          ? `${Math.floor(selectedDog.age_months / 12)}년 ${selectedDog.age_months % 12}개월 (약 ${selectedDog.age_months}개월)`
+                          : "-"}
                   </p>
                 )}
               </div>

@@ -45,6 +45,8 @@ export function DogRegisterModal({
     birth_month: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [useAgeInput, setUseAgeInput] = useState(false);
+  const [ageInput, setAgeInput] = useState("");
 
   // 모달이 닫힐 때 폼 초기화
   useEffect(() => {
@@ -59,8 +61,27 @@ export function DogRegisterModal({
         birth_year: "",
         birth_month: "",
       });
+      setUseAgeInput(false);
+      setAgeInput("");
     }
   }, [isOpen]);
+
+  // 나이 입력 시 birth_year 자동 계산
+  useEffect(() => {
+    if (useAgeInput && ageInput) {
+      const age = parseInt(ageInput, 10);
+      if (!isNaN(age) && age > 0) {
+        const currentYear = new Date().getFullYear();
+        // 1살 = 올해 태어남, 2살 = 작년 태어남
+        const birthYear = currentYear - age + 1;
+        setFormData((prev) => ({
+          ...prev,
+          birth_year: String(birthYear),
+          birth_month: "1", // 나이로 입력 시 월은 비움
+        }));
+      }
+    }
+  }, [useAgeInput, ageInput]);
 
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
@@ -239,57 +260,107 @@ export function DogRegisterModal({
             />
           </div>
 
-          {/* 생년월 */}
+          {/* 생년월 / 나이 */}
           <div>
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-              생년월
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              <Select
-                placeholder="년도"
-                selectedKeys={formData.birth_year ? [formData.birth_year] : []}
-                onSelectionChange={(keys) => {
-                  const selected = Array.from(keys)[0] as string;
-                  setFormData((prev) => ({
-                    ...prev,
-                    birth_year: selected || "",
-                  }));
-                }}
-                classNames={{
-                  trigger:
-                    "bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700",
-                }}
-              >
-                {years.map((year) => (
-                  <SelectItem key={String(year)} textValue={`${year}년`}>
-                    {year}년
-                  </SelectItem>
-                ))}
-              </Select>
-              <Select
-                placeholder="월"
-                selectedKeys={
-                  formData.birth_month ? [formData.birth_month] : []
-                }
-                onSelectionChange={(keys) => {
-                  const selected = Array.from(keys)[0] as string;
-                  setFormData((prev) => ({
-                    ...prev,
-                    birth_month: selected || "",
-                  }));
-                }}
-                classNames={{
-                  trigger:
-                    "bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700",
-                }}
-              >
-                {months.map((month) => (
-                  <SelectItem key={String(month)} textValue={`${month}월`}>
-                    {month}월
-                  </SelectItem>
-                ))}
-              </Select>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                {useAgeInput ? "나이" : "생년월"}
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={useAgeInput}
+                  onChange={(e) => {
+                    setUseAgeInput(e.target.checked);
+                    if (!e.target.checked) {
+                      setAgeInput("");
+                    } else {
+                      setFormData((prev) => ({
+                        ...prev,
+                        birth_year: "",
+                        birth_month: "",
+                      }));
+                    }
+                  }}
+                  className="w-4 h-4 rounded border-zinc-300 dark:border-zinc-600 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                  나이로 입력
+                </span>
+              </label>
             </div>
+
+            {useAgeInput ? (
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  min="1"
+                  max="30"
+                  placeholder="나이 입력"
+                  value={ageInput}
+                  onChange={(e) => setAgeInput(e.target.value)}
+                  classNames={{
+                    inputWrapper:
+                      "bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700",
+                  }}
+                  endContent={<span className="text-zinc-400 text-sm">살</span>}
+                />
+                {ageInput && formData.birth_year && (
+                  <span className="text-xs text-zinc-500 dark:text-zinc-400 whitespace-nowrap">
+                    ({formData.birth_year}년생)
+                  </span>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                <Select
+                  placeholder="년도"
+                  selectedKeys={
+                    formData.birth_year ? [formData.birth_year] : []
+                  }
+                  onSelectionChange={(keys) => {
+                    const selected = Array.from(keys)[0] as string;
+                    setFormData((prev) => ({
+                      ...prev,
+                      birth_year: selected || "",
+                    }));
+                  }}
+                  classNames={{
+                    trigger:
+                      "bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700",
+                  }}
+                >
+                  {years.map((year) => (
+                    <SelectItem key={String(year)} textValue={`${year}년`}>
+                      {year}년
+                    </SelectItem>
+                  ))}
+                </Select>
+                <Select
+                  placeholder="월"
+                  selectedKeys={
+                    formData.birth_month ? [formData.birth_month] : []
+                  }
+                  onSelectionChange={(keys) => {
+                    const selected = Array.from(keys)[0] as string;
+                    setFormData((prev) => ({
+                      ...prev,
+                      birth_month: selected || "",
+                    }));
+                  }}
+                  classNames={{
+                    trigger:
+                      "bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700",
+                  }}
+                >
+                  {months.map((month) => (
+                    <SelectItem key={String(month)} textValue={`${month}월`}>
+                      {month}월
+                    </SelectItem>
+                  ))}
+                </Select>
+              </div>
+            )}
           </div>
 
           {/* 특이사항 */}
