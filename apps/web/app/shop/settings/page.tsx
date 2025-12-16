@@ -279,72 +279,44 @@ export default function ShopSettingsPage() {
     );
   };
 
-  // 삭제 확인 모달
-  const showDeleteModal = (type: GroomingType) => {
-    if (!selectedShopId) return;
+  // 활성/비활성 토글 핸들러
+  const handleToggleActive = async (type: GroomingType) => {
+    const accessToken = getAccessToken();
+    if (!accessToken || !selectedShopId) return;
 
-    showModal(
-      {
-        header: "삭제 확인",
-        body: () => (
-          <p>
-            <strong className="text-zinc-900 dark:text-zinc-100">
-              {type.name}
-            </strong>{" "}
-            미용 타입을 삭제하시겠습니까?
-          </p>
-        ),
-        footer: (onConfirm, _, onClose) => (
-          <div className="flex justify-end gap-3">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-200 dark:bg-zinc-700 rounded-lg hover:bg-zinc-300 dark:hover:bg-zinc-600 transition-colors"
-            >
-              취소
-            </button>
-            <button
-              onClick={onConfirm}
-              className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
-            >
-              삭제
-            </button>
-          </div>
-        ),
-      },
-      async () => {
-        // onConfirm
-        const accessToken = getAccessToken();
-        if (!accessToken || !selectedShopId) return;
+    const newActiveState = !type.is_active;
+    const actionText = newActiveState ? "활성화" : "비활성화";
 
-        try {
-          const response = await fetch(
-            `${API_BASE_URL}/api/shops/${selectedShopId}/grooming-types/${type.id}`,
-            {
-              method: "DELETE",
-              headers: {
-                Authorization: `Bearer ${accessToken}`,
-              },
-            }
-          );
-
-          const data = await response.json();
-
-          if (response.ok && data.success) {
-            showAlertModal("알림", "미용 타입이 삭제되었습니다.");
-            fetchGroomingTypes(selectedShopId);
-          } else {
-            showAlertModal(
-              "알림",
-              data.message || "미용 타입 삭제에 실패했습니다."
-            );
-          }
-        } catch (error) {
-          console.error("미용 타입 삭제 실패:", error);
-          showAlertModal("알림", "미용 타입 삭제 중 오류가 발생했습니다.");
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/shops/${selectedShopId}/grooming-types/${type.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({
+            is_active: newActiveState,
+          }),
         }
-      },
-      closeModal
-    );
+      );
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        showAlertModal("알림", `미용 타입이 ${actionText}되었습니다.`);
+        fetchGroomingTypes(selectedShopId);
+      } else {
+        showAlertModal(
+          "알림",
+          data.message || `미용 타입 ${actionText}에 실패했습니다.`
+        );
+      }
+    } catch (error) {
+      console.error(`미용 타입 ${actionText} 실패:`, error);
+      showAlertModal("알림", `미용 타입 ${actionText} 중 오류가 발생했습니다.`);
+    }
   };
 
   // 선택된 매장이 변경되면 미용 타입 목록 조회
@@ -587,23 +559,45 @@ export default function ShopSettingsPage() {
                             </svg>
                           </button>
                           <button
-                            onClick={() => showDeleteModal(type)}
-                            className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                            title="삭제"
+                            onClick={() => handleToggleActive(type)}
+                            className={`p-2 rounded-lg transition-colors ${
+                              type.is_active === false
+                                ? "text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20"
+                                : "text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                            }`}
+                            title={
+                              type.is_active === false ? "활성화" : "비활성화"
+                            }
                           >
-                            <svg
-                              className="w-5 h-5"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                              />
-                            </svg>
+                            {type.is_active === false ? (
+                              <svg
+                                className="w-5 h-5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M5 13l4 4L19 7"
+                                />
+                              </svg>
+                            ) : (
+                              <svg
+                                className="w-5 h-5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
+                                />
+                              </svg>
+                            )}
                           </button>
                         </div>
                       </td>

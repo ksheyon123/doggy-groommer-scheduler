@@ -279,6 +279,21 @@ export const addGroomingType = async (req: Request, res: Response) => {
       });
     }
 
+    // 이름 중복 체크 (비활성화된 것 포함)
+    const existingGroomingType = await GroomingType.findOne({
+      where: {
+        shop_id: id,
+        name,
+      },
+    });
+
+    if (existingGroomingType) {
+      return res.status(400).json({
+        success: false,
+        message: "이미 존재하는 미용 타입 이름입니다.",
+      });
+    }
+
     const newGroomingType = await GroomingType.create({
       name,
       description,
@@ -326,9 +341,28 @@ export const updateGroomingType = async (req: Request, res: Response) => {
       });
     }
 
+    // 이름 변경 시 중복 체크 (비활성화된 것 포함, 자기 자신 제외)
+    if (name !== undefined && name !== groomingType.name) {
+      const existingGroomingType = await GroomingType.findOne({
+        where: {
+          shop_id: id,
+          name,
+        },
+      });
+
+      if (existingGroomingType) {
+        return res.status(400).json({
+          success: false,
+          message: "이미 존재하는 미용 타입 이름입니다.",
+        });
+      }
+    }
+
     if (name !== undefined) groomingType.name = name;
     if (description !== undefined) groomingType.description = description;
     if (default_price !== undefined) groomingType.default_price = default_price;
+    if (req.body.is_active !== undefined)
+      groomingType.is_active = req.body.is_active;
 
     await groomingType.save();
 
