@@ -220,6 +220,7 @@ export const deleteShop = async (req: Request, res: Response) => {
 export const getGroomingTypes = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const { include_inactive } = req.query;
 
     const shop = await Shop.findByPk(id);
 
@@ -230,8 +231,16 @@ export const getGroomingTypes = async (req: Request, res: Response) => {
       });
     }
 
+    // include_inactive=true가 아니면 활성화된 미용 타입만 조회
+    const whereClause: { shop_id: string; is_active?: boolean } = {
+      shop_id: id,
+    };
+    if (include_inactive !== "true") {
+      whereClause.is_active = true;
+    }
+
     const groomingTypes = await GroomingType.findAll({
-      where: { shop_id: id },
+      where: whereClause,
       order: [["created_at", "DESC"]],
     });
 
@@ -252,7 +261,7 @@ export const getGroomingTypes = async (req: Request, res: Response) => {
 export const addGroomingType = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, description } = req.body;
+    const { name, description, default_price = 0 } = req.body;
 
     if (!name) {
       return res.status(400).json({
@@ -273,6 +282,7 @@ export const addGroomingType = async (req: Request, res: Response) => {
     const newGroomingType = await GroomingType.create({
       name,
       description,
+      default_price,
       shop_id: id,
     });
 

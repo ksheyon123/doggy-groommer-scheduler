@@ -12,6 +12,7 @@ interface GroomingType {
   name: string;
   description?: string;
   default_price?: number;
+  is_active?: boolean;
 }
 
 // API 기본 URL
@@ -59,7 +60,7 @@ export default function ShopSettingsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 미용 타입 목록 조회
+  // 미용 타입 목록 조회 (비활성화 포함)
   const fetchGroomingTypes = async (shopId: number) => {
     const accessToken = getAccessToken();
     if (!accessToken) return;
@@ -67,7 +68,7 @@ export default function ShopSettingsPage() {
     setIsLoadingTypes(true);
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/shops/${shopId}/grooming-types`,
+        `${API_BASE_URL}/api/shops/${shopId}/grooming-types?include_inactive=true`,
         {
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -607,6 +608,9 @@ export default function ShopSettingsPage() {
                       기본 금액
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                      상태
+                    </th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                       관리
                     </th>
                   </tr>
@@ -629,6 +633,17 @@ export default function ShopSettingsPage() {
                         <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
                           {formatPrice(type.default_price)}
                         </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        {type.is_active === false ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+                            비활성화
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                            활성화
+                          </span>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <div className="flex items-center justify-center gap-1">
