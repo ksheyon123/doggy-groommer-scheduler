@@ -2,9 +2,41 @@ import { Request, Response } from "express";
 import { Op } from "sequelize";
 import { GroomingAppointment } from "../models/GroomingAppointment";
 import { GroomingType } from "../models/GroomingType";
+import { AppointmentGroomingType } from "../models/AppointmentGroomingType";
 import { Dog } from "../models/Dog";
 import { User } from "../models/User";
 import { Shop } from "../models/Shop";
+
+// 공통 include 설정
+const getCommonIncludes = () => [
+  {
+    model: Shop,
+    attributes: ["id", "name"],
+  },
+  {
+    model: User,
+    as: "createdByUser",
+    attributes: ["id", "name", "email"],
+  },
+  {
+    model: User,
+    as: "assignedUser",
+    attributes: ["id", "name", "email"],
+  },
+  {
+    model: Dog,
+    attributes: ["id", "name", "breed"],
+  },
+  {
+    model: AppointmentGroomingType,
+    include: [
+      {
+        model: GroomingType,
+        attributes: ["id", "name", "description", "default_price"],
+      },
+    ],
+  },
+];
 
 // 샵별 모든 예약 조회
 export const getAllAppointments = async (req: Request, res: Response) => {
@@ -15,26 +47,7 @@ export const getAllAppointments = async (req: Request, res: Response) => {
 
     const appointments = await GroomingAppointment.findAll({
       where: whereClause,
-      include: [
-        {
-          model: Shop,
-          attributes: ["id", "name"],
-        },
-        {
-          model: User,
-          as: "createdByUser",
-          attributes: ["id", "name", "email"],
-        },
-        {
-          model: User,
-          as: "assignedUser",
-          attributes: ["id", "name", "email"],
-        },
-        {
-          model: Dog,
-          attributes: ["id", "name", "breed"],
-        },
-      ],
+      include: getCommonIncludes(),
       order: [["appointment_at", "DESC"]],
     });
 
@@ -75,6 +88,15 @@ export const getAppointmentById = async (req: Request, res: Response) => {
         {
           model: Dog,
           attributes: ["id", "name", "breed", "note"],
+        },
+        {
+          model: AppointmentGroomingType,
+          include: [
+            {
+              model: GroomingType,
+              attributes: ["id", "name", "description", "default_price"],
+            },
+          ],
         },
       ],
     });
@@ -122,6 +144,7 @@ export const createAppointment = async (req: Request, res: Response) => {
       created_by_user_id,
       assigned_user_id,
       grooming_type,
+      grooming_types, // 새로운 배열 형식: [{ grooming_type_id: number, applied_price?: number }]
       memo,
       amount,
       appointment_at,
@@ -177,7 +200,7 @@ export const createAppointment = async (req: Request, res: Response) => {
       });
     }
 
-    // grooming_type이 있으면 GroomingType 테이블에 추가 (없을 경우에만)
+    // (레거시) grooming_type이 있으면 GroomingType 테이블에 추가 (없을 경우에만)
     if (grooming_type && grooming_type.trim()) {
       await GroomingType.findOrCreate({
         where: {
@@ -197,7 +220,7 @@ export const createAppointment = async (req: Request, res: Response) => {
       dog_id,
       created_by_user_id,
       assigned_user_id,
-      grooming_type,
+      grooming_type, // 레거시 필드 유지
       memo,
       amount,
       appointment_at,
@@ -206,29 +229,29 @@ export const createAppointment = async (req: Request, res: Response) => {
       status: status || "scheduled",
     });
 
+    // 새로운 grooming_types 배열 처리
+    if (
+      grooming_types &&
+      Array.isArray(grooming_types) &&
+      grooming_types.length > 0
+    ) {
+      for (const gt of grooming_types) {
+        // grooming_type_id 검증
+        const groomingType = await GroomingType.findByPk(gt.grooming_type_id);
+        if (groomingType && groomingType.shop_id === shop_id) {
+          await AppointmentGroomingType.create({
+            appointment_id: newAppointment.id,
+            grooming_type_id: gt.grooming_type_id,
+            applied_price: gt.applied_price ?? groomingType.default_price ?? 0,
+          });
+        }
+      }
+    }
+
     const appointmentWithDetails = await GroomingAppointment.findByPk(
       newAppointment.id,
       {
-        include: [
-          {
-            model: Shop,
-            attributes: ["id", "name"],
-          },
-          {
-            model: User,
-            as: "createdByUser",
-            attributes: ["id", "name", "email"],
-          },
-          {
-            model: User,
-            as: "assignedUser",
-            attributes: ["id", "name", "email"],
-          },
-          {
-            model: Dog,
-            attributes: ["id", "name", "breed"],
-          },
-        ],
+        include: getCommonIncludes(),
       }
     );
 
@@ -253,6 +276,7 @@ export const updateAppointment = async (req: Request, res: Response) => {
     const {
       assigned_user_id,
       grooming_type,
+      grooming_types, // 새로운 배열 형식: [{ grooming_type_id: number, applied_price?: number }]
       memo,
       amount,
       appointment_at,
@@ -270,7 +294,7 @@ export const updateAppointment = async (req: Request, res: Response) => {
       });
     }
 
-    // grooming_type이 있으면 GroomingType 테이블에 추가 (없을 경우에만)
+    // (레거시) grooming_type이 있으면 GroomingType 테이블에 추가 (없을 경우에만)
     if (grooming_type && grooming_type.trim()) {
       await GroomingType.findOrCreate({
         where: {
@@ -299,27 +323,28 @@ export const updateAppointment = async (req: Request, res: Response) => {
 
     await appointment.save();
 
+    // 새로운 grooming_types 배열 처리 (기존 관계 삭제 후 재생성)
+    if (grooming_types !== undefined && Array.isArray(grooming_types)) {
+      // 기존 관계 삭제
+      await AppointmentGroomingType.destroy({
+        where: { appointment_id: Number(id) },
+      });
+
+      // 새로운 관계 생성
+      for (const gt of grooming_types) {
+        const groomingType = await GroomingType.findByPk(gt.grooming_type_id);
+        if (groomingType && groomingType.shop_id === appointment.shop_id) {
+          await AppointmentGroomingType.create({
+            appointment_id: Number(id),
+            grooming_type_id: gt.grooming_type_id,
+            applied_price: gt.applied_price ?? groomingType.default_price ?? 0,
+          });
+        }
+      }
+    }
+
     const updatedAppointment = await GroomingAppointment.findByPk(id, {
-      include: [
-        {
-          model: Shop,
-          attributes: ["id", "name"],
-        },
-        {
-          model: User,
-          as: "createdByUser",
-          attributes: ["id", "name", "email"],
-        },
-        {
-          model: User,
-          as: "assignedUser",
-          attributes: ["id", "name", "email"],
-        },
-        {
-          model: Dog,
-          attributes: ["id", "name", "breed"],
-        },
-      ],
+      include: getCommonIncludes(),
     });
 
     res.status(200).json({

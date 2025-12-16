@@ -27,6 +27,13 @@ export class GroomingType extends Model {
   })
   description!: string;
 
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: true,
+    defaultValue: 0,
+  })
+  default_price!: number;
+
   @ForeignKey(() => Shop)
   @Column({
     type: DataType.INTEGER,

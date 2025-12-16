@@ -5,10 +5,12 @@ import {
   DataType,
   ForeignKey,
   BelongsTo,
+  HasMany,
 } from "sequelize-typescript";
 import { User } from "./User";
 import { Dog } from "./Dog";
 import { Shop } from "./Shop";
+import { AppointmentGroomingType } from "./AppointmentGroomingType";
 
 @Table({
   tableName: "grooming_appointments",
@@ -104,4 +106,7 @@ export class GroomingAppointment extends Model {
     defaultValue: "scheduled",
   })
   status!: string;
+
+  @HasMany(() => AppointmentGroomingType)
+  groomingTypes!: AppointmentGroomingType[];
 }

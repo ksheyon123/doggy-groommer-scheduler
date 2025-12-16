@@ -8,6 +8,7 @@ import { Dog } from "../models/Dog";
 import { GroomingAppointment } from "../models/GroomingAppointment";
 import { ShopInvitation } from "../models/ShopInvitation";
 import { GroomingType } from "../models/GroomingType";
+import { AppointmentGroomingType } from "../models/AppointmentGroomingType";
 
 dotenv.config();
 
@@ -26,6 +27,7 @@ const sequelize = new Sequelize({
     GroomingAppointment,
     ShopInvitation,
     GroomingType,
+    AppointmentGroomingType,
   ],
   logging: false,
 });
