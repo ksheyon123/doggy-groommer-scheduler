@@ -7,6 +7,71 @@ import { Dog } from "../models/Dog";
 import { User } from "../models/User";
 import { Shop } from "../models/Shop";
 
+// API 응답용 타입 정의
+interface GroomingTypeData {
+  id: number;
+  name: string;
+  description?: string;
+  default_price?: number;
+}
+
+interface AppointmentGroomingTypeData {
+  id: number;
+  appointment_id: number;
+  grooming_type_id: number;
+  applied_price: number;
+  groomingType?: GroomingTypeData;
+}
+
+interface AppointmentData {
+  id: number;
+  shop_id: number;
+  dog_id: number;
+  created_by_user_id: number;
+  assigned_user_id?: number | null;
+  grooming_type?: string;
+  memo?: string;
+  amount?: number | null;
+  appointment_at?: string;
+  start_time?: string;
+  end_time?: string;
+  status?: string;
+  groomingTypes?: AppointmentGroomingTypeData[];
+  [key: string]: unknown;
+}
+
+// appointment 데이터에 grooming_type 필드 동적 추가 (groomingTypes의 name들을 쉼표로 join)
+const addComputedGroomingType = (
+  appointment: GroomingAppointment | AppointmentData | null
+): AppointmentData | null => {
+  if (!appointment) return appointment;
+
+  const appointmentData: AppointmentData =
+    "toJSON" in appointment && typeof appointment.toJSON === "function"
+      ? (appointment.toJSON() as AppointmentData)
+      : (appointment as AppointmentData);
+
+  // AppointmentGroomingTypes에서 GroomingType의 name들을 추출하여 join
+  const groomingTypeNames =
+    appointmentData.groomingTypes
+      ?.map((agt: AppointmentGroomingTypeData) => agt.groomingType?.name)
+      .filter(Boolean)
+      .join(", ") || "";
+
+  console.log("appointmentData : ", groomingTypeNames);
+  return {
+    ...appointmentData,
+    grooming_type: groomingTypeNames,
+  };
+};
+
+// 배열에 대해 grooming_type 필드 동적 추가
+const addComputedGroomingTypeToList = (
+  appointments: (GroomingAppointment | AppointmentData)[]
+): (AppointmentData | null)[] => {
+  return appointments.map(addComputedGroomingType);
+};
+
 // 공통 include 설정
 const getCommonIncludes = () => [
   {
@@ -53,7 +118,7 @@ export const getAllAppointments = async (req: Request, res: Response) => {
 
     res.status(200).json({
       success: true,
-      data: appointments,
+      data: addComputedGroomingTypeToList(appointments),
     });
   } catch (error) {
     res.status(500).json({
@@ -110,7 +175,7 @@ export const getAppointmentById = async (req: Request, res: Response) => {
 
     res.status(200).json({
       success: true,
-      data: appointment,
+      data: addComputedGroomingType(appointment),
     });
   } catch (error) {
     res.status(500).json({
@@ -258,7 +323,7 @@ export const createAppointment = async (req: Request, res: Response) => {
     res.status(201).json({
       success: true,
       message: "예약이 성공적으로 생성되었습니다.",
-      data: appointmentWithDetails,
+      data: addComputedGroomingType(appointmentWithDetails),
     });
   } catch (error) {
     res.status(500).json({
@@ -350,7 +415,7 @@ export const updateAppointment = async (req: Request, res: Response) => {
     res.status(200).json({
       success: true,
       message: "예약이 성공적으로 수정되었습니다.",
-      data: updatedAppointment,
+      data: addComputedGroomingType(updatedAppointment),
     });
   } catch (error) {
     res.status(500).json({
@@ -462,7 +527,7 @@ export const getAppointmentsByShopId = async (req: Request, res: Response) => {
 
     res.status(200).json({
       success: true,
-      data: appointments,
+      data: addComputedGroomingTypeToList(appointments),
       pagination: {
         currentPage: pageNum,
         totalPages: totalPages,
@@ -507,13 +572,22 @@ export const getAppointmentsByDogId = async (req: Request, res: Response) => {
           model: Dog,
           attributes: ["id", "name", "breed"],
         },
+        {
+          model: AppointmentGroomingType,
+          include: [
+            {
+              model: GroomingType,
+              attributes: ["id", "name", "description", "default_price"],
+            },
+          ],
+        },
       ],
       order: [["appointment_at", "DESC"]],
     });
 
     res.status(200).json({
       success: true,
-      data: appointments,
+      data: addComputedGroomingTypeToList(appointments),
     });
   } catch (error) {
     res.status(500).json({
@@ -553,13 +627,22 @@ export const getAppointmentsByCreatedByUserId = async (
           model: Dog,
           attributes: ["id", "name", "breed"],
         },
+        {
+          model: AppointmentGroomingType,
+          include: [
+            {
+              model: GroomingType,
+              attributes: ["id", "name", "description", "default_price"],
+            },
+          ],
+        },
       ],
       order: [["appointment_at", "DESC"]],
     });
 
     res.status(200).json({
       success: true,
-      data: appointments,
+      data: addComputedGroomingTypeToList(appointments),
     });
   } catch (error) {
     res.status(500).json({
