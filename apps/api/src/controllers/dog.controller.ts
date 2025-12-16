@@ -221,7 +221,8 @@ export const createDog = async (req: Request, res: Response) => {
       owner_phone_number,
       note,
       weight,
-      age_months,
+      birth_year,
+      birth_month,
     } = req.body;
 
     // 필수 필드 검증
@@ -249,7 +250,8 @@ export const createDog = async (req: Request, res: Response) => {
       owner_phone_number,
       note,
       weight,
-      age_months,
+      birth_year,
+      birth_month,
     });
 
     const dogWithDetails = await Dog.findByPk(newDog.id, {
@@ -286,7 +288,8 @@ export const updateDog = async (req: Request, res: Response) => {
       owner_phone_number,
       note,
       weight,
-      age_months,
+      birth_year,
+      birth_month,
     } = req.body;
 
     const dog = await Dog.findByPk(id);
@@ -306,7 +309,8 @@ export const updateDog = async (req: Request, res: Response) => {
       dog.owner_phone_number = owner_phone_number;
     if (note !== undefined) dog.note = note;
     if (weight !== undefined) dog.weight = weight;
-    if (age_months !== undefined) dog.age_months = age_months;
+    if (birth_year !== undefined) dog.birth_year = birth_year;
+    if (birth_month !== undefined) dog.birth_month = birth_month;
 
     await dog.save();
 

@@ -23,7 +23,6 @@ import {
   type GroomingTypeRegisterData,
 } from "@repo/ui";
 import { useState, useRef, useEffect } from "react";
-import moment from "moment";
 import { useRouter } from "next/navigation";
 import { getAccessToken, useAuth } from "@/lib/auth";
 import { useShop } from "@/lib/shop";
@@ -525,16 +524,7 @@ export default function Home() {
       throw new Error("로그인이 필요합니다.");
     }
 
-    // 나이를 개월 수로 변환
-    let ageMonths = null;
-    if (dogData.birth_year && dogData.birth_month) {
-      const birthDate = moment(
-        `${dogData.birth_year}-${dogData.birth_month.padStart(2, "0")}-01`
-      );
-      const now = moment();
-      ageMonths = now.diff(birthDate, "months");
-    }
-
+    console.log(dogData);
     const response = await fetch(`${API_BASE_URL}/api/dogs`, {
       method: "POST",
       headers: {
@@ -549,7 +539,12 @@ export default function Home() {
         owner_phone_number: dogData.owner_phone_number,
         note: dogData.note,
         weight: dogData.weight ? parseFloat(dogData.weight) : null,
-        age_months: ageMonths,
+        birth_year: dogData.birth_year
+          ? parseInt(dogData.birth_year, 10)
+          : null,
+        birth_month: dogData.birth_month
+          ? parseInt(dogData.birth_month, 10)
+          : null,
       }),
     });
 

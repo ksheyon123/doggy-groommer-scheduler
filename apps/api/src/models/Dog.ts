@@ -70,6 +70,18 @@ export class Dog extends Model {
   age_months!: number;
 
   @Column({
+    type: DataType.INTEGER,
+    allowNull: true,
+  })
+  birth_year!: number;
+
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: true,
+  })
+  birth_month!: number;
+
+  @Column({
     type: DataType.BOOLEAN,
     allowNull: false,
     defaultValue: false,

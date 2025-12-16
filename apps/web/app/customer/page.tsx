@@ -5,7 +5,6 @@ import { useAuth, getAccessToken } from "@/lib/auth";
 import { useShop } from "@/lib/shop";
 import { useRouter } from "next/navigation";
 import { Paginator, DogRegisterModal, type DogRegisterData } from "@repo/ui";
-import moment from "moment";
 
 interface Dog {
   id: number;
@@ -16,7 +15,9 @@ interface Dog {
   owner_phone_number: string | null;
   note: string | null;
   weight: number | null;
-  age_months: number | null;
+  age_months: number | null; // 호환용
+  birth_year: number | null;
+  birth_month: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -128,16 +129,6 @@ export default function CustomerManagementPage() {
       throw new Error("로그인이 필요합니다.");
     }
 
-    // 나이를 개월 수로 변환
-    let ageMonths = null;
-    if (data.birth_year && data.birth_month) {
-      const birthDate = moment(
-        `${data.birth_year}-${data.birth_month.padStart(2, "0")}-01`
-      );
-      const now = moment();
-      ageMonths = now.diff(birthDate, "months");
-    }
-
     const response = await fetch(`${API_BASE_URL}/api/dogs`, {
       method: "POST",
       headers: {
@@ -152,7 +143,8 @@ export default function CustomerManagementPage() {
         owner_phone_number: data.owner_phone_number.trim() || null,
         note: data.note.trim() || null,
         weight: data.weight ? parseFloat(data.weight) : null,
-        age_months: ageMonths,
+        birth_year: data.birth_year ? parseInt(data.birth_year, 10) : null,
+        birth_month: data.birth_month ? parseInt(data.birth_month, 10) : null,
       }),
     });
     const result = await response.json();
@@ -188,7 +180,8 @@ export default function CustomerManagementPage() {
             owner_phone_number: selectedDog.owner_phone_number?.trim() || null,
             note: selectedDog.note?.trim() || null,
             weight: selectedDog.weight,
-            age_months: selectedDog.age_months,
+            birth_year: selectedDog.birth_year,
+            birth_month: selectedDog.birth_month,
           }),
         }
       );
@@ -463,28 +456,61 @@ export default function CustomerManagementPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-                  나이 (개월)
+                  생년월
                 </label>
                 {isEditMode ? (
-                  <input
-                    type="number"
-                    value={selectedDog.age_months ?? ""}
-                    onChange={(e) =>
-                      setSelectedDog({
-                        ...selectedDog,
-                        age_months: e.target.value
-                          ? parseInt(e.target.value)
-                          : null,
-                      })
-                    }
-                    placeholder="예: 24 (2년)"
-                    className="w-full px-4 py-3 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
-                  />
+                  <div className="grid grid-cols-2 gap-3">
+                    <select
+                      value={selectedDog.birth_year ?? ""}
+                      onChange={(e) =>
+                        setSelectedDog({
+                          ...selectedDog,
+                          birth_year: e.target.value
+                            ? parseInt(e.target.value)
+                            : null,
+                        })
+                      }
+                      className="w-full px-4 py-3 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
+                    >
+                      <option value="">년도 선택</option>
+                      {Array.from(
+                        { length: 30 },
+                        (_, i) => new Date().getFullYear() - i
+                      ).map((year) => (
+                        <option key={year} value={year}>
+                          {year}년
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      value={selectedDog.birth_month ?? ""}
+                      onChange={(e) =>
+                        setSelectedDog({
+                          ...selectedDog,
+                          birth_month: e.target.value
+                            ? parseInt(e.target.value)
+                            : null,
+                        })
+                      }
+                      className="w-full px-4 py-3 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
+                    >
+                      <option value="">월 선택</option>
+                      {Array.from({ length: 12 }, (_, i) => i + 1).map(
+                        (month) => (
+                          <option key={month} value={month}>
+                            {month}월
+                          </option>
+                        )
+                      )}
+                    </select>
+                  </div>
                 ) : (
                   <p className="px-4 py-3 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-zinc-900 dark:text-zinc-100">
-                    {selectedDog.age_months
-                      ? `${Math.floor(selectedDog.age_months / 12)}년 ${selectedDog.age_months % 12}개월`
-                      : "-"}
+                    {selectedDog.birth_year && selectedDog.birth_month
+                      ? `${selectedDog.birth_year}년 ${selectedDog.birth_month}월`
+                      : selectedDog.age_months
+                        ? `${Math.floor(selectedDog.age_months / 12)}년 ${selectedDog.age_months % 12}개월 (약 ${selectedDog.age_months}개월)`
+                        : "-"}
                   </p>
                 )}
               </div>
