@@ -10,14 +10,19 @@ import {
   SelectItem,
 } from "@heroui/react";
 import { SearchDropdown } from "./search-dropdown";
-import { InputDropdown } from "./input-dropdown";
 import { DogRegisterModal, type DogRegisterData } from "./dog-register-modal";
 import type { DogSearchItem } from "./search-dropdown";
+import {
+  MultiGroomingTypeSelector,
+  type SelectedGroomingType,
+  type GroomingTypeWithPrice,
+} from "./multi-grooming-type-selector";
 
 export interface GroomingTypeItem {
   id: number;
   name: string;
   description?: string;
+  default_price?: number;
 }
 
 export interface GroomerItem {
@@ -36,8 +41,8 @@ export interface AppointmentFormData {
   start_time: string;
   end_time: string;
   memo: string;
-  grooming_type: string;
-  amount: number | null;
+  grooming_types: SelectedGroomingType[]; // 복수 미용 타입
+  amount: number | null; // 총 금액 (자동 계산 또는 수동 입력)
 }
 
 export interface AppointmentFormModalProps {
@@ -66,7 +71,7 @@ export interface AppointmentFormModalProps {
     start_time: string;
     end_time: string;
     memo: string;
-    grooming_type: string;
+    grooming_types?: SelectedGroomingType[];
     amount: number | null;
   };
 }
@@ -87,6 +92,7 @@ export function AppointmentFormModal({
   editMode = false,
   editData,
 }: AppointmentFormModalProps) {
+  console.log("editData : ", editData);
   const [formData, setFormData] = useState<AppointmentFormData>({
     dog_id: null,
     dogName: "",
@@ -95,7 +101,7 @@ export function AppointmentFormModal({
     start_time: initialTime || "",
     end_time: "",
     memo: "",
-    grooming_type: "",
+    grooming_types: [],
     amount: null,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -115,6 +121,10 @@ export function AppointmentFormModal({
     if (isOpen) {
       if (editMode && editData) {
         // 수정 모드: editData로 폼 초기화
+        // grooming_types가 editData에 있으면 사용, 없으면 빈 배열
+        const groomingTypesData =
+          (editData as { grooming_types?: SelectedGroomingType[] })
+            .grooming_types || [];
         setFormData({
           id: editData.id,
           dog_id: editData.dog_id,
@@ -124,7 +134,7 @@ export function AppointmentFormModal({
           start_time: editData.start_time,
           end_time: editData.end_time,
           memo: editData.memo,
-          grooming_type: editData.grooming_type,
+          grooming_types: groomingTypesData,
           amount: editData.amount,
         });
         setSelectedDog({
@@ -157,7 +167,7 @@ export function AppointmentFormModal({
         start_time: "",
         end_time: "",
         memo: "",
-        grooming_type: "",
+        grooming_types: [],
         amount: null,
       });
       setSelectedDog(null);
@@ -561,40 +571,28 @@ export function AppointmentFormModal({
               </div>
             </div>
 
-            {/* 미용 종류 */}
+            {/* 미용 종류 및 금액 */}
             <div>
               <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-                미용 종류
+                미용 종류 및 금액
               </label>
-              <InputDropdown
-                placeholder="예: 전체 미용, 부분 미용, 목욕..."
-                items={groomingTypes}
-                value={formData.grooming_type}
-                onChange={(value) => handleInputChange("grooming_type", value)}
-              />
-            </div>
-
-            {/* 금액 */}
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-                금액 (원)
-              </label>
-              <Input
-                type="number"
-                placeholder="예: 50000"
-                value={formData.amount !== null ? String(formData.amount) : ""}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  handleInputChange(
-                    "amount",
-                    value === "" ? null : Number(value)
-                  );
+              <MultiGroomingTypeSelector
+                placeholder="미용 종류를 선택하세요..."
+                items={groomingTypes as GroomingTypeWithPrice[]}
+                selectedItems={formData.grooming_types}
+                onChange={(items) => {
+                  // 복수 미용 타입 업데이트
+                  setFormData((prev) => ({
+                    ...prev,
+                    grooming_types: items,
+                    // 총 금액 자동 계산
+                    amount:
+                      items.reduce(
+                        (sum, item) => sum + item.applied_price,
+                        0
+                      ) || null,
+                  }));
                 }}
-                classNames={{
-                  inputWrapper:
-                    "bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700",
-                }}
-                startContent={<span className="text-zinc-400 text-sm">₩</span>}
               />
             </div>
 

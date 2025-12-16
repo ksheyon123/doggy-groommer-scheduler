@@ -28,7 +28,7 @@ export class GroomingType extends Model {
   description!: string;
 
   @Column({
-    type: DataType.INTEGER,
+    type: DataType.FLOAT,
     allowNull: true,
     defaultValue: 0,
   })

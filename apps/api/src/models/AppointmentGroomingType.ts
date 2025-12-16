@@ -37,7 +37,7 @@ export class AppointmentGroomingType extends Model {
   groomingType!: GroomingType;
 
   @Column({
-    type: DataType.INTEGER,
+    type: DataType.FLOAT,
     allowNull: true,
     defaultValue: 0,
   })

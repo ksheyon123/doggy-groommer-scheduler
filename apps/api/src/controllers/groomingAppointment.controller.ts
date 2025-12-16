@@ -443,6 +443,15 @@ export const getAppointmentsByShopId = async (req: Request, res: Response) => {
             model: Dog,
             attributes: ["id", "name", "breed"],
           },
+          {
+            model: AppointmentGroomingType,
+            include: [
+              {
+                model: GroomingType,
+                attributes: ["id", "name", "description", "default_price"],
+              },
+            ],
+          },
         ],
         order: [["appointment_at", "DESC"]],
         limit: limitNum,

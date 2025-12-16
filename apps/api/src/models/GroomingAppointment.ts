@@ -77,7 +77,7 @@ export class GroomingAppointment extends Model {
   memo!: string;
 
   @Column({
-    type: DataType.INTEGER,
+    type: DataType.FLOAT,
     allowNull: true,
   })
   amount!: number;

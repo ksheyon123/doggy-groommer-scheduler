@@ -19,6 +19,7 @@ import {
   type Groomer as DailyGroomer,
   type Appointment as DailyAppointment,
   type WeeklyAppointment,
+  type SelectedGroomingType,
 } from "@repo/ui";
 import { useState, useRef, useEffect } from "react";
 import moment from "moment";
@@ -36,7 +37,7 @@ interface ApiAppointment {
   dog_id: number;
   created_by_user_id: number;
   assigned_user_id?: number; // 담당 미용사 ID
-  grooming_type: string;
+  grooming_type: string; // 레거시 필드
   memo?: string;
   amount?: number;
   appointment_at: string;
@@ -62,6 +63,19 @@ interface ApiAppointment {
     id: number;
     name: string;
   };
+  // N:N 테이블에서 가져온 미용 타입 목록
+  groomingTypes?: {
+    id: number;
+    appointment_id: number;
+    grooming_type_id: number;
+    applied_price: number;
+    groomingType?: {
+      id: number;
+      name: string;
+      description?: string;
+      default_price?: number;
+    };
+  }[];
 }
 
 // 선택된 미용사 타입
@@ -118,7 +132,7 @@ export default function Home() {
     start_time: string;
     end_time: string;
     memo: string;
-    grooming_type: string;
+    grooming_types?: SelectedGroomingType[];
     amount: number | null;
   } | null>(null);
 
@@ -218,10 +232,10 @@ export default function Home() {
           },
         }
       );
-      const data = await response.json();
+      const result = await response.json();
 
-      if (response.ok && data.success) {
-        setGroomingTypes(data.data);
+      if (response.ok && result.success) {
+        setGroomingTypes(result.data);
       }
     } catch (error) {
       console.error("미용 종류 조회 실패:", error);
@@ -402,6 +416,18 @@ export default function Home() {
     return dateStr === targetDateStr;
   };
 
+  // AppointmentGroomingTypes에서 서비스명 조합하는 헬퍼 함수
+  const getServiceNameFromAppointment = (apt: ApiAppointment): string => {
+    if (apt.groomingTypes && apt.groomingTypes.length > 0) {
+      return apt.groomingTypes
+        .map((agt) => agt.groomingType?.name || "")
+        .filter(Boolean)
+        .join(", ");
+    }
+    // N:N 테이블에 데이터가 없으면 레거시 필드 사용 (이전 데이터 호환)
+    return apt.grooming_type || "미용";
+  };
+
   // DailyView용 appointments 변환
   const dailyAppointments: DailyAppointment[] = appointments
     .filter((apt) => isSameDate(apt.appointment_at, selectedDate))
@@ -423,7 +449,7 @@ export default function Home() {
         startTime: formatTime(apt.start_time),
         endTime: formatTime(apt.end_time),
         dogName: apt.dog?.name || "이름 없음",
-        serviceName: apt.grooming_type || "미용",
+        serviceName: getServiceNameFromAppointment(apt),
         amount: apt.amount || 0,
       };
     });
@@ -446,7 +472,7 @@ export default function Home() {
       startTime: formatTime(apt.start_time),
       endTime: formatTime(apt.end_time),
       dogName: apt.dog?.name || "이름 없음",
-      serviceName: apt.grooming_type || "",
+      serviceName: getServiceNameFromAppointment(apt),
       amount: apt.amount || 0,
       color:
         groomerIndex >= 0
@@ -583,6 +609,12 @@ export default function Home() {
       throw new Error("로그인이 필요합니다.");
     }
 
+    // grooming_types 배열을 API 형식으로 변환
+    const groomingTypesPayload = formData.grooming_types.map((gt) => ({
+      grooming_type_id: gt.grooming_type_id,
+      applied_price: gt.applied_price,
+    }));
+
     // 수정 모드
     if (isEditMode && formData.id) {
       const response = await fetch(
@@ -595,7 +627,7 @@ export default function Home() {
           },
           body: JSON.stringify({
             assigned_user_id: formData.assigned_user_id,
-            grooming_type: formData.grooming_type,
+            grooming_types: groomingTypesPayload,
             memo: formData.memo,
             amount: formData.amount,
             appointment_at: formData.appointment_at,
@@ -629,7 +661,7 @@ export default function Home() {
         dog_id: formData.dog_id,
         created_by_user_id: user.id,
         assigned_user_id: formData.assigned_user_id || selectedGroomer?.id,
-        grooming_type: formData.grooming_type,
+        grooming_types: groomingTypesPayload,
         memo: formData.memo,
         amount: formData.amount,
         appointment_at: formData.appointment_at,
@@ -673,6 +705,18 @@ export default function Home() {
     await refreshAppointments();
   };
 
+  // AppointmentGroomingTypes를 SelectedGroomingType으로 변환하는 헬퍼 함수
+  const convertToSelectedGroomingTypes = (
+    apiAppointment: ApiAppointment
+  ): SelectedGroomingType[] => {
+    if (!apiAppointment.groomingTypes) return [];
+    return apiAppointment.groomingTypes.map((agt) => ({
+      grooming_type_id: agt.grooming_type_id,
+      name: agt.groomingType?.name || "",
+      applied_price: agt.applied_price,
+    }));
+  };
+
   // 예약 클릭 시 수정 모달 열기 (Weekly View)
   const handleWeeklyAppointmentClick = (appointment: WeeklyAppointment) => {
     // 원본 API 데이터에서 해당 예약 찾기
@@ -681,6 +725,7 @@ export default function Home() {
     );
     if (!apiAppointment) return;
 
+    console.log(apiAppointment);
     setIsEditMode(true);
     setEditAppointmentData({
       id: apiAppointment.id,
@@ -693,7 +738,7 @@ export default function Home() {
       start_time: formatTime(apiAppointment.start_time),
       end_time: formatTime(apiAppointment.end_time),
       memo: apiAppointment.memo || "",
-      grooming_type: apiAppointment.grooming_type || "",
+      grooming_types: convertToSelectedGroomingTypes(apiAppointment),
       amount: apiAppointment.amount || null,
     });
     setIsAppointmentModalOpen(true);
@@ -719,7 +764,7 @@ export default function Home() {
       start_time: formatTime(apiAppointment.start_time),
       end_time: formatTime(apiAppointment.end_time),
       memo: apiAppointment.memo || "",
-      grooming_type: apiAppointment.grooming_type || "",
+      grooming_types: convertToSelectedGroomingTypes(apiAppointment),
       amount: apiAppointment.amount || null,
     });
     setIsAppointmentModalOpen(true);

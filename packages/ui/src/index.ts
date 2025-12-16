@@ -14,6 +14,7 @@ export * from "./components/modal";
 export * from "./components/login-modal";
 export * from "./components/search-dropdown";
 export * from "./components/input-dropdown";
+export * from "./components/multi-grooming-type-selector";
 export * from "./components/appointment-form-modal";
 export * from "./components/dog-register-modal";
 export * from "./components/shop-register-modal";
