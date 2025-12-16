@@ -20,6 +20,7 @@ import {
   type Appointment as DailyAppointment,
   type WeeklyAppointment,
   type SelectedGroomingType,
+  type GroomingTypeRegisterData,
 } from "@repo/ui";
 import { useState, useRef, useEffect } from "react";
 import moment from "moment";
@@ -725,7 +726,6 @@ export default function Home() {
     );
     if (!apiAppointment) return;
 
-    console.log(apiAppointment);
     setIsEditMode(true);
     setEditAppointmentData({
       id: apiAppointment.id,
@@ -777,6 +777,41 @@ export default function Home() {
     setEditAppointmentData(null);
   };
 
+  const handleAddGroomingType = async (data: GroomingTypeRegisterData) => {
+    const accessToken = getAccessToken();
+    if (!accessToken) {
+      throw new Error("인증 또는 매장 선택이 필요합니다.");
+    }
+
+    if (!selectedShop || !user) {
+      throw new Error("매장 또는 사용자 정보가 없습니다.");
+    }
+
+    const response = await fetch(
+      `${API_BASE_URL}/api/shops/${selectedShop.id}/grooming-types`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          name: data.name,
+          description: data.description || undefined,
+          default_price: data.default_price || 0,
+        }),
+      }
+    );
+
+    const result = await response.json();
+    if (response.ok && result.success) {
+      await fetchGroomingTypes();
+      return result.data;
+    } else {
+      throw new Error(result.message || "미용 타입 추가에 실패했습니다.");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-zinc-50 font-sans dark:bg-zinc-950">
       {/* 로그인 모달 */}
@@ -801,6 +836,7 @@ export default function Home() {
         groomerName={selectedGroomer?.name}
         editMode={isEditMode}
         editData={editAppointmentData || undefined}
+        onRegisterGroomingType={handleAddGroomingType}
       />
 
       {/* 매장 등록 모달 (매장이 없을 때 강제 표시) */}

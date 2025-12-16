@@ -7,6 +7,70 @@ import { Dog } from "../models/Dog";
 import { User } from "../models/User";
 import { Shop } from "../models/Shop";
 
+// API 응답용 타입 정의
+interface GroomingTypeData {
+  id: number;
+  name: string;
+  description?: string;
+  default_price?: number;
+}
+
+interface AppointmentGroomingTypeData {
+  id: number;
+  appointment_id: number;
+  grooming_type_id: number;
+  applied_price: number;
+  groomingType?: GroomingTypeData;
+}
+
+interface AppointmentData {
+  id: number;
+  shop_id: number;
+  dog_id: number;
+  created_by_user_id: number;
+  assigned_user_id?: number | null;
+  grooming_type?: string;
+  memo?: string;
+  amount?: number | null;
+  appointment_at?: string;
+  start_time?: string;
+  end_time?: string;
+  status?: string;
+  groomingTypes?: AppointmentGroomingTypeData[];
+  [key: string]: unknown;
+}
+
+// appointment 데이터에 grooming_type 필드 동적 추가 (groomingTypes의 name들을 쉼표로 join)
+const addComputedGroomingType = (
+  appointment: GroomingAppointment | AppointmentData | null
+): AppointmentData | null => {
+  if (!appointment) return appointment;
+
+  const appointmentData: AppointmentData =
+    "toJSON" in appointment && typeof appointment.toJSON === "function"
+      ? (appointment.toJSON() as AppointmentData)
+      : (appointment as AppointmentData);
+
+  // AppointmentGroomingTypes에서 GroomingType의 name들을 추출하여 join
+  const groomingTypeNames =
+    appointmentData.groomingTypes
+      ?.map((agt: AppointmentGroomingTypeData) => agt.groomingType?.name)
+      .filter(Boolean)
+      .join(", ") || "";
+
+  return {
+    ...appointmentData,
+    grooming_type: groomingTypeNames,
+  };
+};
+
+// 배열에 대해 grooming_type 필드 동적 추가
+const addComputedGroomingTypeToList = (
+  appointments: (GroomingAppointment | AppointmentData)[]
+): (AppointmentData | null)[] => {
+  return appointments.map(addComputedGroomingType);
+};
+
 // 공통 include 설정
 const getCommonIncludes = () => [
   {
@@ -53,7 +117,7 @@ export const getAllAppointments = async (req: Request, res: Response) => {
 
     res.status(200).json({
       success: true,
-      data: appointments,
+      data: addComputedGroomingTypeToList(appointments),
     });
   } catch (error) {
     res.status(500).json({
@@ -110,7 +174,7 @@ export const getAppointmentById = async (req: Request, res: Response) => {
 
     res.status(200).json({
       success: true,
-      data: appointment,
+      data: addComputedGroomingType(appointment),
     });
   } catch (error) {
     res.status(500).json({
@@ -235,10 +299,29 @@ export const createAppointment = async (req: Request, res: Response) => {
       Array.isArray(grooming_types) &&
       grooming_types.length > 0
     ) {
+      // 먼저 모든 미용 타입 유효성 검증
       for (const gt of grooming_types) {
-        // grooming_type_id 검증
         const groomingType = await GroomingType.findByPk(gt.grooming_type_id);
-        if (groomingType && groomingType.shop_id === shop_id) {
+
+        if (!groomingType || groomingType.shop_id !== shop_id) {
+          return res.status(400).json({
+            success: false,
+            message: "유효하지 않은 미용 타입이 포함되어 있습니다.",
+          });
+        }
+
+        if (groomingType.is_active === false) {
+          return res.status(400).json({
+            success: false,
+            message: `미용 타입 '${groomingType.name}'은(는) 현재 비활성화되어 사용할 수 없습니다.`,
+          });
+        }
+      }
+
+      // 검증 통과 후 미용 타입 등록
+      for (const gt of grooming_types) {
+        const groomingType = await GroomingType.findByPk(gt.grooming_type_id);
+        if (groomingType) {
           await AppointmentGroomingType.create({
             appointment_id: newAppointment.id,
             grooming_type_id: gt.grooming_type_id,
@@ -258,7 +341,7 @@ export const createAppointment = async (req: Request, res: Response) => {
     res.status(201).json({
       success: true,
       message: "예약이 성공적으로 생성되었습니다.",
-      data: appointmentWithDetails,
+      data: addComputedGroomingType(appointmentWithDetails),
     });
   } catch (error) {
     res.status(500).json({
@@ -325,15 +408,34 @@ export const updateAppointment = async (req: Request, res: Response) => {
 
     // 새로운 grooming_types 배열 처리 (기존 관계 삭제 후 재생성)
     if (grooming_types !== undefined && Array.isArray(grooming_types)) {
+      // 먼저 모든 미용 타입 유효성 검증
+      for (const gt of grooming_types) {
+        const groomingType = await GroomingType.findByPk(gt.grooming_type_id);
+
+        if (!groomingType || groomingType.shop_id !== appointment.shop_id) {
+          return res.status(400).json({
+            success: false,
+            message: "유효하지 않은 미용 타입이 포함되어 있습니다.",
+          });
+        }
+
+        if (groomingType.is_active === false) {
+          return res.status(400).json({
+            success: false,
+            message: `미용 타입 '${groomingType.name}'은(는) 현재 비활성화되어 사용할 수 없습니다.`,
+          });
+        }
+      }
+
       // 기존 관계 삭제
       await AppointmentGroomingType.destroy({
         where: { appointment_id: Number(id) },
       });
 
-      // 새로운 관계 생성
+      // 검증 통과 후 새로운 관계 생성
       for (const gt of grooming_types) {
         const groomingType = await GroomingType.findByPk(gt.grooming_type_id);
-        if (groomingType && groomingType.shop_id === appointment.shop_id) {
+        if (groomingType) {
           await AppointmentGroomingType.create({
             appointment_id: Number(id),
             grooming_type_id: gt.grooming_type_id,
@@ -350,7 +452,7 @@ export const updateAppointment = async (req: Request, res: Response) => {
     res.status(200).json({
       success: true,
       message: "예약이 성공적으로 수정되었습니다.",
-      data: updatedAppointment,
+      data: addComputedGroomingType(updatedAppointment),
     });
   } catch (error) {
     res.status(500).json({
@@ -462,7 +564,7 @@ export const getAppointmentsByShopId = async (req: Request, res: Response) => {
 
     res.status(200).json({
       success: true,
-      data: appointments,
+      data: addComputedGroomingTypeToList(appointments),
       pagination: {
         currentPage: pageNum,
         totalPages: totalPages,
@@ -507,13 +609,22 @@ export const getAppointmentsByDogId = async (req: Request, res: Response) => {
           model: Dog,
           attributes: ["id", "name", "breed"],
         },
+        {
+          model: AppointmentGroomingType,
+          include: [
+            {
+              model: GroomingType,
+              attributes: ["id", "name", "description", "default_price"],
+            },
+          ],
+        },
       ],
       order: [["appointment_at", "DESC"]],
     });
 
     res.status(200).json({
       success: true,
-      data: appointments,
+      data: addComputedGroomingTypeToList(appointments),
     });
   } catch (error) {
     res.status(500).json({
@@ -553,13 +664,22 @@ export const getAppointmentsByCreatedByUserId = async (
           model: Dog,
           attributes: ["id", "name", "breed"],
         },
+        {
+          model: AppointmentGroomingType,
+          include: [
+            {
+              model: GroomingType,
+              attributes: ["id", "name", "description", "default_price"],
+            },
+          ],
+        },
       ],
       order: [["appointment_at", "DESC"]],
     });
 
     res.status(200).json({
       success: true,
-      data: appointments,
+      data: addComputedGroomingTypeToList(appointments),
     });
   } catch (error) {
     res.status(500).json({

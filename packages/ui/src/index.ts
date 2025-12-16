@@ -18,4 +18,5 @@ export * from "./components/multi-grooming-type-selector";
 export * from "./components/appointment-form-modal";
 export * from "./components/dog-register-modal";
 export * from "./components/shop-register-modal";
+export * from "./components/grooming-type-register-modal";
 export * from "./components/paginator";
