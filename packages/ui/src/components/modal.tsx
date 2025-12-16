@@ -152,17 +152,16 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
-  const handleConfirm = useCallback(() => {
+  const handleConfirm = () => {
     modalState.onConfirm?.();
     closeModal();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [closeModal]);
+  };
 
-  const handleReject = useCallback(() => {
+  const handleReject = () => {
     modalState.onReject?.();
     closeModal();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [closeModal]);
+  };
 
   return (
     <ModalContext.Provider value={{ showModal, closeModal }}>

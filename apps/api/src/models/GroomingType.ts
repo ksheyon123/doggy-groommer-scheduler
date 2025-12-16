@@ -34,6 +34,13 @@ export class GroomingType extends Model {
   })
   default_price!: number;
 
+  @Column({
+    type: DataType.BOOLEAN,
+    allowNull: false,
+    defaultValue: true,
+  })
+  is_active!: boolean;
+
   @ForeignKey(() => Shop)
   @Column({
     type: DataType.INTEGER,

@@ -294,7 +294,7 @@ export const addGroomingType = async (req: Request, res: Response) => {
 export const updateGroomingType = async (req: Request, res: Response) => {
   try {
     const { id, typeId } = req.params;
-    const { name, description } = req.body;
+    const { name, description, default_price } = req.body;
 
     const shop = await Shop.findByPk(id);
 
@@ -318,6 +318,7 @@ export const updateGroomingType = async (req: Request, res: Response) => {
 
     if (name !== undefined) groomingType.name = name;
     if (description !== undefined) groomingType.description = description;
+    if (default_price !== undefined) groomingType.default_price = default_price;
 
     await groomingType.save();
 
@@ -359,8 +360,8 @@ export const deleteGroomingType = async (req: Request, res: Response) => {
         message: "미용 타입을 찾을 수 없습니다.",
       });
     }
-
-    await groomingType.destroy();
+    groomingType.is_active = false;
+    await groomingType.save();
 
     res.status(200).json({
       success: true,
