@@ -58,7 +58,6 @@ const addComputedGroomingType = (
       .filter(Boolean)
       .join(", ") || "";
 
-  console.log("appointmentData : ", groomingTypeNames);
   return {
     ...appointmentData,
     grooming_type: groomingTypeNames,
@@ -300,10 +299,29 @@ export const createAppointment = async (req: Request, res: Response) => {
       Array.isArray(grooming_types) &&
       grooming_types.length > 0
     ) {
+      // 먼저 모든 미용 타입 유효성 검증
       for (const gt of grooming_types) {
-        // grooming_type_id 검증
         const groomingType = await GroomingType.findByPk(gt.grooming_type_id);
-        if (groomingType && groomingType.shop_id === shop_id) {
+
+        if (!groomingType || groomingType.shop_id !== shop_id) {
+          return res.status(400).json({
+            success: false,
+            message: "유효하지 않은 미용 타입이 포함되어 있습니다.",
+          });
+        }
+
+        if (groomingType.is_active === false) {
+          return res.status(400).json({
+            success: false,
+            message: `미용 타입 '${groomingType.name}'은(는) 현재 비활성화되어 사용할 수 없습니다.`,
+          });
+        }
+      }
+
+      // 검증 통과 후 미용 타입 등록
+      for (const gt of grooming_types) {
+        const groomingType = await GroomingType.findByPk(gt.grooming_type_id);
+        if (groomingType) {
           await AppointmentGroomingType.create({
             appointment_id: newAppointment.id,
             grooming_type_id: gt.grooming_type_id,
@@ -390,15 +408,34 @@ export const updateAppointment = async (req: Request, res: Response) => {
 
     // 새로운 grooming_types 배열 처리 (기존 관계 삭제 후 재생성)
     if (grooming_types !== undefined && Array.isArray(grooming_types)) {
+      // 먼저 모든 미용 타입 유효성 검증
+      for (const gt of grooming_types) {
+        const groomingType = await GroomingType.findByPk(gt.grooming_type_id);
+
+        if (!groomingType || groomingType.shop_id !== appointment.shop_id) {
+          return res.status(400).json({
+            success: false,
+            message: "유효하지 않은 미용 타입이 포함되어 있습니다.",
+          });
+        }
+
+        if (groomingType.is_active === false) {
+          return res.status(400).json({
+            success: false,
+            message: `미용 타입 '${groomingType.name}'은(는) 현재 비활성화되어 사용할 수 없습니다.`,
+          });
+        }
+      }
+
       // 기존 관계 삭제
       await AppointmentGroomingType.destroy({
         where: { appointment_id: Number(id) },
       });
 
-      // 새로운 관계 생성
+      // 검증 통과 후 새로운 관계 생성
       for (const gt of grooming_types) {
         const groomingType = await GroomingType.findByPk(gt.grooming_type_id);
-        if (groomingType && groomingType.shop_id === appointment.shop_id) {
+        if (groomingType) {
           await AppointmentGroomingType.create({
             appointment_id: Number(id),
             grooming_type_id: gt.grooming_type_id,

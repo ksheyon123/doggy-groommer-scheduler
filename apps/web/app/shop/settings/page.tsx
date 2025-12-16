@@ -4,7 +4,11 @@ import { useState, useEffect, useRef } from "react";
 import { getAccessToken } from "@/lib/auth";
 import { useShop } from "@/lib/shop";
 import { useRouter } from "next/navigation";
-import { useModal } from "@repo/ui";
+import {
+  useModal,
+  GroomingTypeRegisterModal,
+  type GroomingTypeRegisterData,
+} from "@repo/ui";
 
 // 미용 타입
 interface GroomingType {
@@ -36,7 +40,10 @@ export default function ShopSettingsPage() {
   const [groomingTypes, setGroomingTypes] = useState<GroomingType[]>([]);
   const [isLoadingTypes, setIsLoadingTypes] = useState(false);
 
-  // 폼 입력값을 위한 refs
+  // 미용 타입 추가 모달 상태
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
+  // 폼 입력값을 위한 refs (수정 모달용)
   const formDataRef = useRef({
     name: "",
     description: "",
@@ -113,123 +120,37 @@ export default function ShopSettingsPage() {
     return price.toLocaleString("ko-KR") + "원";
   };
 
-  // 미용 타입 추가 모달
-  const showAddModal = () => {
-    if (!selectedShopId) return;
+  // 미용 타입 추가 핸들러 (공통 컴포넌트용)
+  const handleAddGroomingType = async (data: GroomingTypeRegisterData) => {
+    const accessToken = getAccessToken();
+    if (!accessToken || !selectedShopId) {
+      throw new Error("인증 또는 매장 선택이 필요합니다.");
+    }
 
-    formDataRef.current = { name: "", description: "", price: "" };
-
-    showModal(
+    const response = await fetch(
+      `${API_BASE_URL}/api/shops/${selectedShopId}/grooming-types`,
       {
-        header: "미용 타입 추가",
-        body: () => (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-                미용 타입명 <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                defaultValue=""
-                onChange={(e) => (formDataRef.current.name = e.target.value)}
-                placeholder="예: 전체 미용, 부분 미용, 목욕"
-                className="w-full px-4 py-3 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                autoFocus
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-                기본 금액 (선택)
-              </label>
-              <input
-                type="number"
-                defaultValue=""
-                onChange={(e) => (formDataRef.current.price = e.target.value)}
-                placeholder="예: 50000"
-                className="w-full px-4 py-3 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-                설명 (선택)
-              </label>
-              <textarea
-                defaultValue=""
-                onChange={(e) =>
-                  (formDataRef.current.description = e.target.value)
-                }
-                placeholder="미용 타입에 대한 설명을 입력하세요"
-                rows={3}
-                className="w-full px-4 py-3 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-              />
-            </div>
-          </div>
-        ),
-        footer: (onConfirm, _, onClose) => (
-          <div className="flex justify-end gap-3">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-200 dark:bg-zinc-700 rounded-lg hover:bg-zinc-300 dark:hover:bg-zinc-600 transition-colors"
-            >
-              취소
-            </button>
-            <button
-              onClick={onConfirm}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              추가
-            </button>
-          </div>
-        ),
-      },
-      async () => {
-        // onConfirm
-        if (!formDataRef.current.name.trim()) {
-          showAlertModal("알림", "미용 타입명을 입력해주세요.");
-          return;
-        }
-
-        const accessToken = getAccessToken();
-        if (!accessToken || !selectedShopId) return;
-
-        try {
-          const response = await fetch(
-            `${API_BASE_URL}/api/shops/${selectedShopId}/grooming-types`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${accessToken}`,
-              },
-              body: JSON.stringify({
-                name: formDataRef.current.name.trim(),
-                description:
-                  formDataRef.current.description.trim() || undefined,
-                default_price: formDataRef.current.price
-                  ? parseInt(formDataRef.current.price, 10)
-                  : 0,
-              }),
-            }
-          );
-
-          const data = await response.json();
-
-          if (response.ok && data.success) {
-            showAlertModal("알림", "미용 타입이 추가되었습니다.");
-            fetchGroomingTypes(selectedShopId);
-          } else {
-            showAlertModal(
-              "알림",
-              data.message || "미용 타입 추가에 실패했습니다."
-            );
-          }
-        } catch (error) {
-          console.error("미용 타입 추가 실패:", error);
-          showAlertModal("알림", "미용 타입 추가 중 오류가 발생했습니다.");
-        }
-      },
-      closeModal
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          name: data.name,
+          description: data.description || undefined,
+          default_price: data.default_price || 0,
+        }),
+      }
     );
+
+    const result = await response.json();
+
+    if (response.ok && result.success) {
+      showAlertModal("알림", "미용 타입이 추가되었습니다.");
+      fetchGroomingTypes(selectedShopId);
+    } else {
+      throw new Error(result.message || "미용 타입 추가에 실패했습니다.");
+    }
   };
 
   // 미용 타입 수정 모달
@@ -298,7 +219,6 @@ export default function ShopSettingsPage() {
             </button>
             <button
               onClick={() => {
-                console.log("AAAA", !!onConfirm);
                 onConfirm();
               }}
               className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
@@ -548,7 +468,7 @@ export default function ShopSettingsPage() {
               미용 타입 목록
             </h2>
             <button
-              onClick={showAddModal}
+              onClick={() => setIsAddModalOpen(true)}
               disabled={!selectedShopId}
               className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
             >
@@ -586,7 +506,7 @@ export default function ShopSettingsPage() {
                 등록된 미용 타입이 없습니다.
               </p>
               <button
-                onClick={showAddModal}
+                onClick={() => setIsAddModalOpen(true)}
                 className="mt-4 px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
               >
                 + 첫 미용 타입 추가하기
@@ -680,6 +600,13 @@ export default function ShopSettingsPage() {
           )}
         </div>
       </main>
+
+      {/* 미용 타입 추가 모달 (공통 컴포넌트) */}
+      <GroomingTypeRegisterModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onSubmit={handleAddGroomingType}
+      />
     </div>
   );
 }

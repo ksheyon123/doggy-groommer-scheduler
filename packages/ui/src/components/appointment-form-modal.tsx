@@ -17,6 +17,7 @@ import {
   type SelectedGroomingType,
   type GroomingTypeWithPrice,
 } from "./multi-grooming-type-selector";
+import { type GroomingTypeRegisterData } from "./grooming-type-register-modal";
 
 export interface GroomingTypeItem {
   id: number;
@@ -52,6 +53,9 @@ export interface AppointmentFormModalProps {
   onDelete?: (id: number) => Promise<void>;
   onSearchDog: (query: string) => Promise<DogSearchItem[]>;
   onRegisterDog?: (data: DogRegisterData) => Promise<DogSearchItem>;
+  onRegisterGroomingType?: (
+    data: GroomingTypeRegisterData
+  ) => Promise<GroomingTypeWithPrice>;
   groomingTypes?: GroomingTypeItem[];
   groomers?: GroomerItem[];
   initialDate?: string;
@@ -83,6 +87,7 @@ export function AppointmentFormModal({
   onDelete,
   onSearchDog,
   onRegisterDog,
+  onRegisterGroomingType,
   groomingTypes = [],
   groomers = [],
   initialDate,
@@ -92,7 +97,6 @@ export function AppointmentFormModal({
   editMode = false,
   editData,
 }: AppointmentFormModalProps) {
-  console.log("editData : ", editData);
   const [formData, setFormData] = useState<AppointmentFormData>({
     dog_id: null,
     dogName: "",
@@ -593,6 +597,7 @@ export function AppointmentFormModal({
                       ) || null,
                   }));
                 }}
+                onRegisterGroomingType={onRegisterGroomingType}
               />
             </div>
 
