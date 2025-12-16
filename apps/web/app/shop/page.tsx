@@ -71,6 +71,14 @@ interface PaginationInfo {
   hasPrevPage: boolean;
 }
 
+// Summary 타입 (API에서 반환하는 기간별 총매출 합계)
+interface SummaryInfo {
+  totalAmount: number;
+  scheduledAmount: number;
+  pendingAmount: number;
+  byStatus: Record<string, number>;
+}
+
 // API 상태를 화면 표시용 상태로 변환
 const convertStatus = (apiStatus: string): "완료" | "예약" | "대기중" => {
   switch (apiStatus) {
@@ -144,6 +152,7 @@ export default function ShopManagementPage() {
   const [isLoadingRecords, setIsLoadingRecords] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState<PaginationInfo | null>(null);
+  const [summary, setSummary] = useState<SummaryInfo | null>(null);
   const ITEMS_PER_PAGE = 10;
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [alertModal, setAlertModal] = useState<{
@@ -246,14 +255,19 @@ export default function ShopManagementPage() {
         if (data.pagination) {
           setPagination(data.pagination);
         }
+        if (data.summary) {
+          setSummary(data.summary);
+        }
       } else {
         setRecords([]);
         setPagination(null);
+        setSummary(null);
       }
     } catch (error) {
       console.error("예약 내역 조회 실패:", error);
       setRecords([]);
       setPagination(null);
+      setSummary(null);
     } finally {
       setIsLoadingRecords(false);
     }
@@ -267,6 +281,7 @@ export default function ShopManagementPage() {
     } else {
       setRecords([]);
       setPagination(null);
+      setSummary(null);
     }
   }, [selectedShopId]);
 
@@ -286,14 +301,10 @@ export default function ShopManagementPage() {
     }
   };
 
-  // 정산 합계 계산
-  const totalAmount = records.reduce((sum, record) => sum + record.cost, 0);
-  const completedAmount = records
-    .filter((r) => r.status === "예약")
-    .reduce((sum, record) => sum + record.cost, 0);
-  const pendingAmount = records
-    .filter((r) => r.status !== "예약")
-    .reduce((sum, record) => sum + record.cost, 0);
+  // 정산 합계 - API에서 반환하는 기간별 총합계 사용 (페이지네이션과 상관없이 전체 기간)
+  const totalAmount = summary?.totalAmount ?? 0;
+  const completedAmount = summary?.scheduledAmount ?? 0;
+  const pendingAmount = summary?.pendingAmount ?? 0;
 
   // 상태별 배지 색상
   const getStatusBadge = (status: GroomingRecord["status"]) => {

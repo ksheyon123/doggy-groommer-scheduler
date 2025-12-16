@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { Op } from "sequelize";
+import { Op, fn, col } from "sequelize";
 import { GroomingAppointment } from "../models/GroomingAppointment";
 import { GroomingType } from "../models/GroomingType";
 import { AppointmentGroomingType } from "../models/AppointmentGroomingType";
@@ -523,6 +523,7 @@ export const getAppointmentsByShopId = async (req: Request, res: Response) => {
       };
     }
 
+    // 페이지네이션된 예약 목록 조회
     const { count, rows: appointments } =
       await GroomingAppointment.findAndCountAll({
         where: whereClause,
@@ -560,6 +561,37 @@ export const getAppointmentsByShopId = async (req: Request, res: Response) => {
         offset: offset,
       });
 
+    // 상태별 매출 합계 조회 (페이지네이션과 상관없이 전체 기간 합계)
+    const statusSummary = await GroomingAppointment.findAll({
+      where: whereClause,
+      attributes: [
+        "status",
+        [fn("COALESCE", fn("SUM", col("amount")), 0), "amount"],
+      ],
+      group: ["status"],
+      raw: true,
+    });
+    console.log(statusSummary);
+
+    // 상태별 매출 합계 객체로 변환 및 총합 계산
+    const summaryByStatus: Record<string, number> = {};
+    let totalAmount = 0;
+    (
+      statusSummary as unknown as Array<{
+        status: string;
+        amount: string | number;
+      }>
+    ).forEach((item) => {
+      const amount = Number(item.amount) || 0;
+      summaryByStatus[item.status] = amount;
+      totalAmount += amount;
+    });
+
+    // scheduled 또는 settled 상태의 매출 합계
+    const scheduledAmount =
+      (summaryByStatus["scheduled"] || 0) + (summaryByStatus["settled"] || 0);
+    const pendingAmount = totalAmount - scheduledAmount;
+
     const totalPages = Math.ceil(count / limitNum);
 
     res.status(200).json({
@@ -572,6 +604,12 @@ export const getAppointmentsByShopId = async (req: Request, res: Response) => {
         limit: limitNum,
         hasNextPage: pageNum < totalPages,
         hasPrevPage: pageNum > 1,
+      },
+      summary: {
+        totalAmount: totalAmount,
+        scheduledAmount: scheduledAmount,
+        pendingAmount: pendingAmount,
+        byStatus: summaryByStatus,
       },
     });
   } catch (error) {
