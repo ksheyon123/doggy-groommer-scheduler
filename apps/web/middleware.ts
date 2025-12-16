@@ -11,6 +11,9 @@ export function middleware(request: NextRequest) {
   // API URL (환경변수에서 가져오거나 기본값 사용)
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
+  // 프로덕션 도메인
+  const productionDomain = "https://doggy-scheduler.com";
+
   // CSP 정책 정의
   // 개발 환경에서는 'unsafe-eval'과 'unsafe-inline' 허용 (HMR, Fast Refresh 지원)
   const cspHeader = isDevelopment
@@ -29,12 +32,12 @@ export function middleware(request: NextRequest) {
         .replace(/\s{2,}/g, " ")
         .trim()
     : `
-    default-src 'self';
-    script-src 'self' 'nonce-${nonce}' 'strict-dynamic';
+    default-src 'self' ${productionDomain};
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' ${productionDomain};
     style-src 'self' 'unsafe-inline';
     img-src 'self' blob: data: https://k.kakaocdn.net https://ssl.pstatic.net https://phinf.pstatic.net https://lh3.googleusercontent.com https://*.googleusercontent.com;
     font-src 'self' https://fonts.gstatic.com;
-    connect-src 'self' ${apiUrl} https://accounts.google.com https://kauth.kakao.com https://nid.naver.com;
+    connect-src 'self' ${apiUrl} ${productionDomain} https://accounts.google.com https://kauth.kakao.com https://nid.naver.com;
     frame-src 'self' https://accounts.google.com https://kauth.kakao.com https://nid.naver.com;
     object-src 'none';
     base-uri 'self';
