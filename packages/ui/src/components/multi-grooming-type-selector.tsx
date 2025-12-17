@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Input } from "@heroui/react";
+import { Input } from "@repo/ui";
 import {
   GroomingTypeRegisterModal,
   type GroomingTypeRegisterData,
@@ -197,7 +197,6 @@ export function MultiGroomingTypeSelector({
                   ₩
                 </span>
                 <input
-                  type="number"
                   value={item.applied_price}
                   onChange={(e) =>
                     handlePriceChange(

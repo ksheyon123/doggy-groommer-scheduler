@@ -571,7 +571,6 @@ export const getAppointmentsByShopId = async (req: Request, res: Response) => {
       group: ["status"],
       raw: true,
     });
-    console.log(statusSummary);
 
     // 상태별 매출 합계 객체로 변환 및 총합 계산
     const summaryByStatus: Record<string, number> = {};

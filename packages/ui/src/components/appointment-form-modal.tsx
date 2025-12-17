@@ -1,17 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  Input,
-  Textarea,
-  Button,
-  Spinner,
-  Select,
-  SelectItem,
-} from "@heroui/react";
+import { Button, Spinner, Select, SelectItem } from "@heroui/react";
+import { Input } from "./input";
+import { Textarea } from "./textarea";
+import type { DogSearchItem } from "./search-dropdown";
 import { SearchDropdown } from "./search-dropdown";
 import { DogRegisterModal, type DogRegisterData } from "./dog-register-modal";
-import type { DogSearchItem } from "./search-dropdown";
 import {
   MultiGroomingTypeSelector,
   type SelectedGroomingType,
@@ -612,6 +607,8 @@ export function AppointmentFormModal({
                 onChange={(e) => handleInputChange("memo", e.target.value)}
                 minRows={3}
                 classNames={{
+                  input:
+                    "w-full h-full focus-visible:none border-none outline-none cursor-input bg-transparent hover:bg-transparent",
                   inputWrapper:
                     "bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700",
                 }}

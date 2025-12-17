@@ -20,3 +20,5 @@ export * from "./components/dog-register-modal";
 export * from "./components/shop-register-modal";
 export * from "./components/grooming-type-register-modal";
 export * from "./components/paginator";
+export * from "./components/input";
+export * from "./components/textarea";
