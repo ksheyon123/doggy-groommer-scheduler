@@ -43,7 +43,7 @@ export function WeeklyView({
   today.setHours(0, 0, 0, 0);
 
   const weekDays = ["일", "월", "화", "수", "목", "금", "토"];
-  const hours = Array.from({ length: 17 }, (_, i) => i + 6); // 06:00 ~ 22:00
+  const hours = Array.from({ length: 14 }, (_, i) => i + 9); // 09:00 ~ 22:00
 
   const getWeekStart = (date: Date) => {
     const d = new Date(date);
@@ -122,7 +122,7 @@ export function WeeklyView({
     const startMinutes = timeToMinutes(apt.startTime);
     const endMinutes = timeToMinutes(apt.endTime);
     const durationHours = (endMinutes - startMinutes) / 60;
-    return durationHours * 48; // 48px per hour
+    return durationHours * 36; // 48px per hour
   };
 
   // 예약 상단 오프셋 계산
@@ -130,7 +130,7 @@ export function WeeklyView({
     const startMinutes = timeToMinutes(apt.startTime);
     const hourStartMinutes = hour * 60;
     const offsetMinutes = startMinutes - hourStartMinutes;
-    return (offsetMinutes / 60) * 48;
+    return (offsetMinutes / 60) * 36;
   };
 
   const formatHour = (hour: number) => `${hour.toString().padStart(2, "0")}:00`;
@@ -150,7 +150,7 @@ export function WeeklyView({
 
   return (
     <div
-      className={`max-h-[calc(100vh-150px)] flex flex-col w-full bg-white dark:bg-zinc-900 rounded-lg shadow-lg ${className}`}
+      className={`max-h-[calc(100vh-60px)] flex flex-col w-full bg-white dark:bg-zinc-900 rounded-lg shadow-lg ${className}`}
     >
       {/* 헤더 */}
       <div className="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-800">
@@ -244,8 +244,8 @@ export function WeeklyView({
                 className="grid grid-cols-8 border-b border-zinc-200 dark:border-zinc-800"
               >
                 {/* 시간 열 */}
-                <div className="p-2 text-right pr-3 border-r border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50 h-12">
-                  <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                <div className="pl-2 pt-1 pb-2 pr-3 text-right border-r border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50 h-12">
+                  <span className="text-xs font-medium align-text-top text-zinc-500 dark:text-zinc-400">
                     {formatHour(hour)}
                   </span>
                 </div>

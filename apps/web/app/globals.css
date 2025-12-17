@@ -4,6 +4,8 @@
 
 html {
   font-size: 12px;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 :root {
