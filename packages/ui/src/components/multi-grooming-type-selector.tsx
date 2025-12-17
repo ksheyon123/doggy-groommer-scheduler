@@ -6,6 +6,7 @@ import {
   GroomingTypeRegisterModal,
   type GroomingTypeRegisterData,
 } from "./grooming-type-register-modal";
+import { AddButton } from "./add-button";
 
 export interface GroomingTypeWithPrice {
   id: number;
@@ -352,26 +353,9 @@ export function MultiGroomingTypeSelector({
 
       {/* 새 미용 타입 추가 버튼 */}
       {onRegisterGroomingType && (
-        <button
-          type="button"
-          onClick={() => setIsRegisterModalOpen(true)}
-          className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
-        >
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 4v16m8-8H4"
-            />
-          </svg>
+        <AddButton onClick={() => setIsRegisterModalOpen(true)}>
           새 미용 타입 추가
-        </button>
+        </AddButton>
       )}
 
       {/* 도움말 */}

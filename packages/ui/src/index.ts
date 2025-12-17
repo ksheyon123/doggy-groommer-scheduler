@@ -22,3 +22,4 @@ export * from "./components/grooming-type-register-modal";
 export * from "./components/paginator";
 export * from "./components/input";
 export * from "./components/textarea";
+export * from "./components/add-button";
