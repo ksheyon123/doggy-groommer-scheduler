@@ -2,6 +2,22 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
+  // 외부 요청 로그
+  const timestamp = new Date().toISOString();
+  const method = request.method;
+  const url = request.url;
+  const pathname = request.nextUrl.pathname;
+  const ip =
+    request.headers.get("x-forwarded-for") ||
+    request.headers.get("x-real-ip") ||
+    "unknown";
+  const userAgent = request.headers.get("user-agent") || "unknown";
+  const referer = request.headers.get("referer") || "direct";
+
+  console.log(
+    `[${timestamp}] ${method} ${pathname} - IP: ${ip} - UA: ${userAgent} - Referer: ${referer} - Full URL: ${url}`
+  );
+
   // CSP nonce 생성
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
 
