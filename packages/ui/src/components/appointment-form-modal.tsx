@@ -14,6 +14,7 @@ import {
 } from "./multi-grooming-type-selector";
 import { type GroomingTypeRegisterData } from "./grooming-type-register-modal";
 import { AddButton } from "./add-button";
+import { CloseButton } from "./close-button";
 
 export interface GroomingTypeItem {
   id: number;
@@ -294,24 +295,7 @@ export function AppointmentFormModal({
               </p>
             )}
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-          >
-            <svg
-              className="w-5 h-5 text-zinc-500"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
+          <CloseButton onClick={onClose} />
         </div>
 
         {/* Body */}
@@ -452,12 +436,14 @@ export function AppointmentFormModal({
 
             {/* 날짜 */}
             <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-                예약 날짜 <span className="text-red-500">*</span>
-              </label>
               <Input
                 type="date"
                 value={formData.appointment_at}
+                labelComponent={
+                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                    예약 날짜 <span className="text-red-500">*</span>
+                  </label>
+                }
                 onChange={(e) => {
                   handleInputChange("appointment_at", e.target.value);
                   if (errors.appointment_at) {
@@ -470,12 +456,14 @@ export function AppointmentFormModal({
                 classNames={{
                   inputWrapper: `bg-white dark:bg-zinc-800 border ${errors.appointment_at ? "border-red-500" : "border-zinc-200 dark:border-zinc-700"}`,
                 }}
+                description={
+                  errors.appointment_at && (
+                    <p className="mt-1 text-sm text-red-500">
+                      {errors.appointment_at}
+                    </p>
+                  )
+                }
               />
-              {errors.appointment_at && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors.appointment_at}
-                </p>
-              )}
             </div>
 
             {/* 시간 */}

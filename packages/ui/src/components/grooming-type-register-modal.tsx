@@ -1,7 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Input, Textarea, Button, Spinner } from "@heroui/react";
+import { Spinner } from "@heroui/react";
+import { Input } from "./input";
+import { Textarea } from "./textarea";
+import { Button } from "./button";
+import { CloseButton } from "./close-button";
 
 export interface GroomingTypeRegisterData {
   name: string;
@@ -101,25 +105,7 @@ export function GroomingTypeRegisterModal({
               새로운 미용 타입을 등록합니다
             </p>
           </div>
-          <button
-            onClick={handleClose}
-            disabled={isSubmitting}
-            className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
-          >
-            <svg
-              className="w-5 h-5 text-zinc-500"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
+          <CloseButton onClick={onClose} disabled={isSubmitting} />
         </div>
 
         {/* Body */}
@@ -127,12 +113,14 @@ export function GroomingTypeRegisterModal({
           <div className="px-6 py-4 space-y-4">
             {/* 미용 타입명 */}
             <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-                미용 타입명 <span className="text-red-500">*</span>
-              </label>
               <Input
                 type="text"
                 placeholder="예: 전체 미용, 부분 미용, 목욕"
+                labelComponent={
+                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                    미용 타입명 <span className="text-red-500">*</span>
+                  </label>
+                }
                 value={formData.name}
                 onChange={(e) => handleInputChange("name", e.target.value)}
                 isInvalid={!!errors.name}
@@ -144,18 +132,18 @@ export function GroomingTypeRegisterModal({
                       : "border-zinc-200 dark:border-zinc-700"
                   }`,
                 }}
-                autoFocus
               />
             </div>
-
             {/* 기본 금액 */}
             <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-                기본 금액 (선택)
-              </label>
               <Input
                 type="number"
                 placeholder="예: 50000"
+                labelComponent={
+                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                    기본 금액 (선택)
+                  </label>
+                }
                 value={formData.default_price?.toString() || ""}
                 onChange={(e) =>
                   handleInputChange(
@@ -168,10 +156,12 @@ export function GroomingTypeRegisterModal({
                   inputWrapper:
                     "bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700",
                 }}
+                description={
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                    예약 시 기본값으로 사용되며, 개별 예약에서 변경 가능합니다
+                  </p>
+                }
               />
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-                예약 시 기본값으로 사용되며, 개별 예약에서 변경 가능합니다
-              </p>
             </div>
 
             {/* 설명 */}

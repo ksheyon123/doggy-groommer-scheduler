@@ -4,7 +4,12 @@ import { useState, useEffect } from "react";
 import { useAuth, getAccessToken } from "@/lib/auth";
 import { useShop } from "@/lib/shop";
 import { useRouter } from "next/navigation";
-import { Paginator, ShopRegisterModal, type ShopRegisterData } from "@repo/ui";
+import {
+  BackButton,
+  Paginator,
+  ShopRegisterModal,
+  type ShopRegisterData,
+} from "@repo/ui";
 
 // 매장 타입
 interface Shop {
@@ -376,24 +381,7 @@ export default function ShopManagementPage() {
         <div className="max-w-6xl mx-auto px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <button
-                onClick={() => router.push("/")}
-                className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
-              >
-                <svg
-                  className="w-5 h-5 text-zinc-600 dark:text-zinc-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 19l-7-7 7-7"
-                  />
-                </svg>
-              </button>
+              <BackButton onClick={() => router.push("/")} />
               <div>
                 <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
                   매장 관리

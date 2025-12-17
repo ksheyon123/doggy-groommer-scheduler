@@ -23,3 +23,5 @@ export * from "./components/paginator";
 export * from "./components/input";
 export * from "./components/textarea";
 export * from "./components/add-button";
+export * from "./components/close-button";
+export * from "./components/back-button";
