@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Input } from "@heroui/react";
+import { Input } from "./input";
 
 export interface InputDropdownItem {
   id: number | string;

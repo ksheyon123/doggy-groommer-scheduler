@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { Input, Button, Spinner } from "@heroui/react";
-
 export interface ShopRegisterData {
   name: string;
 }
@@ -131,8 +130,7 @@ export function ShopRegisterModal({
               }
               onKeyDown={handleKeyDown}
               classNames={{
-                inputWrapper:
-                  "bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700",
+                input: "focus-visible:outline-none",
               }}
               autoFocus
             />
