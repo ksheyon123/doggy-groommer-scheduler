@@ -24,3 +24,8 @@ export * from "./components/employee-register-modal";
 export * from "./components/shop-register-modal";
 export * from "./components/grooming-type-register-modal";
 export * from "./components/paginator";
+export * from "./components/input";
+export * from "./components/textarea";
+export * from "./components/add-button";
+export * from "./components/close-button";
+export * from "./components/back-button";

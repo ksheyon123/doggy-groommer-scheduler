@@ -7,17 +7,14 @@ import { forwardRef } from "react";
 export interface TextareaProps extends HeroTextareaProps {}
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ classNames, ...props }, ref) => {
-    return (
-      <HeroTextarea
-        ref={ref}
-        classNames={{
-          ...classNames,
-          input: `focus-visible:outline-none ${classNames?.input ?? ""}`.trim(),
-        }}
-        {...props}
-      />
-    );
+  ({ ...props }, ref) => {
+    const classNames = {
+      input: "w-full h-full focus-visible:none border-none outline-none",
+      inputWrapper:
+        "bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700",
+      ...props.classNames,
+    };
+    return <HeroTextarea ref={ref} classNames={classNames} {...props} />;
   }
 );
 

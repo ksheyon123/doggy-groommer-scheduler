@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button, Spinner, Select, SelectItem } from "@heroui/react";
 import { Input } from "./input";
 import { Textarea } from "./textarea";
+import { Spinner, Select, SelectItem } from "@heroui/react";
+import { Button } from "./button";
+import { CloseButton } from "./close-button";
 
 export interface DogRegisterData {
   name: string;
@@ -120,25 +122,7 @@ export function DogRegisterModal({
           <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
             🐕 새 강아지 등록
           </h3>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-          >
-            <svg
-              className="w-5 h-5 text-zinc-500"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
+          <CloseButton onClick={onClose} />
         </div>
 
         {/* Body */}

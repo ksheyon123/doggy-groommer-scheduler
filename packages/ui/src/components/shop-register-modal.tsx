@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Input, Button, Spinner } from "@heroui/react";
+import { Spinner } from "@heroui/react";
+import { CloseButton } from "./close-button";
+import { Input } from "./input";
+import { Button } from "./button";
+
 export interface ShopRegisterData {
   name: string;
 }
@@ -26,6 +30,7 @@ export function ShopRegisterModal({
   const [formData, setFormData] = useState<ShopRegisterData>({
     name: "",
   });
+  const [error, setError] = useState<{ input: string }>({ input: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // 모달이 닫힐 때 폼 초기화
@@ -47,7 +52,7 @@ export function ShopRegisterModal({
 
   const handleSubmit = async () => {
     if (!formData.name.trim()) {
-      alert("매장명을 입력해주세요.");
+      setError((prev) => ({ ...prev, input: "매장명을 입력해주세요." }));
       return;
     }
 
@@ -57,7 +62,10 @@ export function ShopRegisterModal({
       onClose();
     } catch (error) {
       console.error("매장 등록 실패:", error);
-      alert("매장 등록 중 오류가 발생했습니다.");
+      setError((prev) => ({
+        ...prev,
+        input: "매장 등록 중 오류가 발생했습니다.",
+      }));
     } finally {
       setIsSubmitting(false);
     }
@@ -82,27 +90,7 @@ export function ShopRegisterModal({
           <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
             🏪 매장 등록
           </h3>
-          {!isRequired && (
-            <button
-              type="button"
-              onClick={onClose}
-              className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-            >
-              <svg
-                className="w-5 h-5 text-zinc-500"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-          )}
+          {!isRequired && <CloseButton onClick={onClose} />}
         </div>
 
         {/* Body */}
@@ -115,24 +103,39 @@ export function ShopRegisterModal({
             </div>
           )}
           <div>
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-              매장명 <span className="text-red-500">*</span>
-            </label>
             <Input
               type="text"
               placeholder="매장명을 입력하세요"
+              labelComponent={
+                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                  매장명 <span className="text-red-500">*</span>
+                </label>
+              }
               value={formData.name}
-              onChange={(e) =>
+              onChange={(e) => {
+                if (e.target.value.length > 0)
+                  setError((prev) => ({ ...prev, input: "" }));
                 setFormData((prev) => ({
                   ...prev,
                   name: e.target.value,
-                }))
-              }
+                }));
+              }}
               onKeyDown={handleKeyDown}
               classNames={{
-                input: "focus-visible:outline-none",
+                inputWrapper: `bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 ${
+                  error.input
+                    ? "border-red-500"
+                    : "border-zinc-200 dark:border-zinc-700"
+                }`,
               }}
-              autoFocus
+              errorMessage={error.input}
+              description={
+                error.input ? (
+                  <p className="mt-1 text-sm text-red-500">{error.input}</p>
+                ) : (
+                  <></>
+                )
+              }
             />
           </div>
         </div>
@@ -156,7 +159,7 @@ export function ShopRegisterModal({
                 type="button"
                 color="primary"
                 onClick={handleSubmit}
-                disabled={isSubmitting || isLoading || !formData.name.trim()}
+                disabled={isSubmitting || isLoading}
               >
                 {isSubmitting || isLoading ? <Spinner size="sm" /> : "등록"}
               </Button>
@@ -175,7 +178,7 @@ export function ShopRegisterModal({
                 type="button"
                 color="primary"
                 onClick={handleSubmit}
-                disabled={isSubmitting || isLoading || !formData.name.trim()}
+                disabled={isSubmitting || isLoading}
               >
                 {isSubmitting || isLoading ? <Spinner size="sm" /> : "등록"}
               </Button>

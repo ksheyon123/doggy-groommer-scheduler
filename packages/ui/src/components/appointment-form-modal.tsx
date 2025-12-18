@@ -1,19 +1,21 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button, Spinner } from "@heroui/react";
+import { Spinner, Select, SelectItem } from "@heroui/react";
 import { Input } from "./input";
 import { Textarea } from "./textarea";
-import { Select } from "./select";
+import { Button } from "./button";
+import type { DogSearchItem } from "./search-dropdown";
 import { SearchDropdown } from "./search-dropdown";
 import { DogRegisterModal, type DogRegisterData } from "./dog-register-modal";
-import type { DogSearchItem } from "./search-dropdown";
 import {
   MultiGroomingTypeSelector,
   type SelectedGroomingType,
   type GroomingTypeWithPrice,
 } from "./multi-grooming-type-selector";
 import { type GroomingTypeRegisterData } from "./grooming-type-register-modal";
+import { AddButton } from "./add-button";
+import { CloseButton } from "./close-button";
 
 export interface GroomingTypeItem {
   id: number;
@@ -294,24 +296,7 @@ export function AppointmentFormModal({
               </p>
             )}
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-          >
-            <svg
-              className="w-5 h-5 text-zinc-500"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
+          <CloseButton onClick={onClose} />
         </div>
 
         {/* Body */}
@@ -325,26 +310,9 @@ export function AppointmentFormModal({
                   <span className="text-red-500">*</span>
                 </label>
                 {!editMode && onRegisterDog && (
-                  <button
-                    type="button"
-                    onClick={() => setIsDogRegisterOpen(true)}
-                    className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 4v16m8-8H4"
-                      />
-                    </svg>
+                  <AddButton onClick={() => setIsDogRegisterOpen(true)}>
                     새 강아지 등록
-                  </button>
+                  </AddButton>
                 )}
               </div>
               {!editMode && (
@@ -428,27 +396,63 @@ export function AppointmentFormModal({
 
             {/* 담당 미용사 */}
             <div>
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                담당 미용사
+              </label>
               {groomers.length > 0 ? (
                 <Select
-                  label="담당 미용사"
                   placeholder="담당 미용사를 선택하세요"
-                  options={groomers.map((groomer) => ({
-                    id: groomer.user_id,
-                    label: groomer.name,
-                    subtitle: groomer.role
-                      ? groomer.role === "owner"
-                        ? "원장"
-                        : groomer.role === "manager"
-                          ? "매니저"
-                          : "직원"
-                      : undefined,
-                    avatarColor: "blue",
-                  }))}
-                  selectedId={formData.assigned_user_id}
-                  onSelectionChange={(id) =>
-                    handleInputChange("assigned_user_id", id as number | null)
+                  selectedKeys={
+                    formData.assigned_user_id
+                      ? [String(formData.assigned_user_id)]
+                      : []
                   }
-                  showAvatar
+                  onSelectionChange={(keys) => {
+                    const selected = Array.from(keys)[0] as string;
+                    handleInputChange(
+                      "assigned_user_id",
+                      selected ? Number(selected) : null
+                    );
+                  }}
+                  classNames={{
+                    trigger:
+                      "bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700",
+                  }}
+                >
+                  {groomers.map((groomer) => (
+                    <SelectItem
+                      key={String(groomer.user_id)}
+                      textValue={groomer.name}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-sm font-medium text-blue-600 dark:text-blue-400">
+                          {groomer.name.charAt(0)}
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-sm">{groomer.name}</span>
+                          {groomer.role && (
+                            <span className="text-xs text-zinc-500">
+                              {groomer.role === "owner"
+                                ? "원장"
+                                : groomer.role === "manager"
+                                  ? "매니저"
+                                  : "직원"}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </Select>
+              ) : groomerName ? (
+                <Input
+                  type="text"
+                  value={groomerName}
+                  isReadOnly
+                  classNames={{
+                    inputWrapper:
+                      "bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700",
+                  }}
                 />
               ) : (
                 <p className="text-sm text-zinc-500 dark:text-zinc-400">
@@ -459,12 +463,14 @@ export function AppointmentFormModal({
 
             {/* 날짜 */}
             <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-                예약 날짜 <span className="text-red-500">*</span>
-              </label>
               <Input
                 type="date"
                 value={formData.appointment_at}
+                labelComponent={
+                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                    예약 날짜 <span className="text-red-500">*</span>
+                  </label>
+                }
                 onChange={(e) => {
                   handleInputChange("appointment_at", e.target.value);
                   if (errors.appointment_at) {
@@ -477,61 +483,73 @@ export function AppointmentFormModal({
                 classNames={{
                   inputWrapper: `bg-white dark:bg-zinc-800 border ${errors.appointment_at ? "border-red-500" : "border-zinc-200 dark:border-zinc-700"}`,
                 }}
+                description={
+                  errors.appointment_at && (
+                    <p className="mt-1 text-sm text-red-500">
+                      {errors.appointment_at}
+                    </p>
+                  )
+                }
               />
-              {errors.appointment_at && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors.appointment_at}
-                </p>
-              )}
             </div>
 
             {/* 시간 */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-                  시작 시간 <span className="text-red-500">*</span>
-                </label>
                 <Input
                   type="time"
                   value={formData.start_time}
-                  min="06:00"
+                  min="09:00"
                   max="22:00"
+                  labelComponent={
+                    <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                      시작 시간 <span className="text-red-500">*</span>
+                    </label>
+                  }
                   onChange={(e) => {
                     handleInputChange("start_time", e.target.value);
                     if (errors.start_time) {
                       setErrors((prev) => ({ ...prev, start_time: undefined }));
                     }
                   }}
+                  description={
+                    errors.start_time ? (
+                      <p className="mt-1 text-sm text-red-500">
+                        {errors.start_time}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-zinc-500 mt-1">
+                        09:00 ~ 22:00
+                      </p>
+                    )
+                  }
                   classNames={{
                     inputWrapper: `bg-white dark:bg-zinc-800 border ${errors.start_time ? "border-red-500" : "border-zinc-200 dark:border-zinc-700"}`,
                   }}
                 />
-                {errors.start_time ? (
-                  <p className="mt-1 text-sm text-red-500">
-                    {errors.start_time}
-                  </p>
-                ) : (
-                  <p className="text-xs text-zinc-500 mt-1">06:00 ~ 22:00</p>
-                )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-                  종료 시간
-                </label>
                 <Input
                   type="time"
                   value={formData.end_time}
-                  min="06:00"
+                  min="09:00"
                   max="22:00"
+                  labelComponent={
+                    <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                      종료 시간
+                    </label>
+                  }
                   onChange={(e) =>
                     handleInputChange("end_time", e.target.value)
+                  }
+                  description={
+                    <p className="text-xs text-zinc-500 mt-1">09:00 ~ 22:00</p>
                   }
                   classNames={{
                     inputWrapper:
                       "bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700",
                   }}
                 />
-                <p className="text-xs text-zinc-500 mt-1">06:00 ~ 22:00</p>
               </div>
             </div>
 
@@ -572,7 +590,8 @@ export function AppointmentFormModal({
                 onChange={(e) => handleInputChange("memo", e.target.value)}
                 minRows={3}
                 classNames={{
-                  input: "outline-none",
+                  input:
+                    "w-full h-full focus-visible:none border-none outline-none cursor-input bg-transparent hover:bg-transparent",
                   inputWrapper:
                     "bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700",
                 }}
@@ -678,5 +697,27 @@ export function AppointmentFormModal({
     </div>
   );
 }
+
+const SelectItemView = ({ groomer }: { groomer: GroomerItem }) => {
+  return (
+    <div className="flex items-center gap-2">
+      <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-sm font-medium text-blue-600 dark:text-blue-400">
+        {groomer.name.charAt(0)}
+      </div>
+      <div className="flex flex-col">
+        <span className="text-sm">{groomer.name}</span>
+        {groomer.role && (
+          <span className="text-xs text-zinc-500">
+            {groomer.role === "owner"
+              ? "원장"
+              : groomer.role === "manager"
+                ? "매니저"
+                : "직원"}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+};
 
 export type { DogRegisterData };
