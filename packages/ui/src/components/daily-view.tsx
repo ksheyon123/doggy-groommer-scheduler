@@ -194,7 +194,7 @@ export function DailyView({
       </div>
 
       {/* 미용선생님 + 시간대 그리드 */}
-      <div className="flex-1 overflow-x-auto overflow-y-auto">
+      <div className="flex-1 overflow-x-auto overflow-y-auto overscroll-none">
         <div
           className="inline-block"
           style={{
