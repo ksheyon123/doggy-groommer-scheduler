@@ -808,7 +808,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50 font-sans dark:bg-zinc-950">
+    <div className="h-[100vh] bg-zinc-50 font-sans dark:bg-zinc-950 overflow-hidden">
       {/* 로그인 모달 */}
       <LoginModal
         isOpen={showLoginModal || (!isLoading && !isAuthenticated)}
@@ -1125,7 +1125,7 @@ export default function Home() {
       </header>
 
       {/* 메인 콘텐츠 */}
-      <main className="w-full max-w-4xl mx-auto p-8">
+      <main className="w-full mx-auto">
         {viewMode === "daily" && (
           <DailyView
             date={selectedDate}
